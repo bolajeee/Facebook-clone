@@ -24,7 +24,7 @@ const authenticate = catchAsync(async (req, res, next) => {
 
     // Verify token
     let decoded;
-    try {
+    try { 
         decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (error) {
         if (error.name === 'TokenExpiredError') {

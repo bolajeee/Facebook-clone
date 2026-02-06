@@ -13,14 +13,14 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
-// Import our custom modules
+// Import of custom modules
 const { prisma } = require('./config/database');
 const { redis } = require('./config/redis');
 const { setupSocketHandlers } = require('./socket/socketHandlers');
 const errorHandler = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 
-// Import routes
+// Import of routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const postRoutes = require('./routes/posts');

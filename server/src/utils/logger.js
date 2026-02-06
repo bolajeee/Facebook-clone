@@ -1,6 +1,5 @@
 /**
  * Winston Logger Configuration
- * Provides structured logging with different levels and formats
  */
 
 const winston = require('winston');
