@@ -7,8 +7,8 @@ const { prisma } = require('../config/database');
 const { redisUtils } = require('../config/redis');
 const { ApiError, catchAsync } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
+const { createLikeNotification } = require('../services/notificationService');
 const {
-    emitNotificationToUser,
     emitCommentToPost,
     emitLikeToPost
 } = require('../socket/socketHandlers');
@@ -461,18 +461,7 @@ const toggleLike = catchAsync(async (req, res) => {
 
         // Create notification for post author (if not liking own post)
         if (post.authorId !== userId) {
-            const notification = await prisma.notification.create({
-                data: {
-                    type: 'LIKE',
-                    message: `${req.user.firstName} ${req.user.lastName} liked your post`,
-                    userId: post.authorId,
-                    postId,
-                    likeId: like.id
-                }
-            });
-
-            // Emit real-time notification
-            emitNotificationToUser(io, post.authorId, notification);
+            await createLikeNotification(io, post.authorId, req.user, postId, like.id);
         }
 
         // Emit like to post room

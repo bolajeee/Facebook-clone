@@ -5,10 +5,8 @@
 const { prisma } = require('../config/database');
 const { ApiError, catchAsync } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
-const {
-    emitNotificationToUser,
-    emitCommentToPost
-} = require('../socket/socketHandlers');
+const { createCommentNotification } = require('../services/notificationService');
+const { emitCommentToPost } = require('../socket/socketHandlers');
 
 /**
  * Create a comment on a post
@@ -51,18 +49,7 @@ const createComment = catchAsync(async (req, res) => {
 
     // Create notification for post author (if not commenting on own post)
     if (post.authorId !== userId) {
-        const notification = await prisma.notification.create({
-            data: {
-                type: 'COMMENT',
-                message: `${req.user.firstName} ${req.user.lastName} commented on your post`,
-                userId: post.authorId,
-                postId,
-                commentId: comment.id
-            }
-        });
-
-        // Emit real-time notification
-        emitNotificationToUser(io, post.authorId, notification);
+        await createCommentNotification(io, post.authorId, req.user, postId, comment.id);
     }
 
     // Emit comment to post room
