@@ -10,7 +10,7 @@ import apiClient from './client';
 export const authAPI = {
     /**
      * Register a new user
-     * @param {Object} userData - { email, password, name }
+     * @param {Object} userData - { username, firstName, lastName, email, password }
      */
     register: (userData) => {
         return apiClient.post('/auth/register', userData);
@@ -18,7 +18,7 @@ export const authAPI = {
 
     /**
      * Login user
-     * @param {Object} credentials - { email, password }
+     * @param {Object} credentials - { identifier, password } - identifier can be email or username
      */
     login: (credentials) => {
         return apiClient.post('/auth/login', credentials);

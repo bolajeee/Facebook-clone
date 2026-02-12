@@ -144,7 +144,7 @@ const validateRegister = (data) => {
  */
 const validateLogin = (data) => {
     const schema = Joi.object({
-        identifier: Joi.string()
+        email: Joi.string()
             .min(3)
             .max(255)
             .required()

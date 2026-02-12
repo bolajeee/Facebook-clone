@@ -52,7 +52,7 @@ Facebook-clone/
 
 ## 🎯 Features Implemented
 
-### Phase 1-5: Backend ✅
+### Backend ✅
 - [x] Database design with Prisma
 - [x] Express server setup
 - [x] JWT authentication (access + refresh tokens)
@@ -63,16 +63,14 @@ Facebook-clone/
 - [x] Follow system
 - [x] Error handling & logging
 
-### Phase 6: Mobile Foundation ✅
+### Mobile ✅
 - [x] React Native project setup
 - [x] Navigation (Auth + Main flows)
 - [x] Redux store (auth, posts, notifications)
 - [x] API layer with token refresh
 - [x] Login & Register screens
 - [x] Connection testing utility
-
-### Coming Soon
-- [ ] Phase 7: Feed Screen with FlashList
+- [x] Phase 7: Feed Screen with FlashList
 - [ ] Phase 8: Create Post with image upload
 - [ ] Phase 9: Profile & Follow system
 - [ ] Phase 10: Real-time notifications

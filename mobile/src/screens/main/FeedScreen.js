@@ -1,7 +1,8 @@
 import React, { useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
 import { fetchFeed, clearFeed } from '../../store/slices/postsSlice';
 import PostCard from '../../components/PostCard';
 import SkeletonLoader from '../../components/SkeletonLoader';
@@ -16,9 +17,11 @@ import SkeletonLoader from '../../components/SkeletonLoader';
  * - Skeleton loading states
  * - Empty state
  * - Error handling
+ * - Floating action button to create posts
  */
 
 export default function FeedScreen() {
+    const navigation = useNavigation();
     const dispatch = useDispatch();
 
     const {
@@ -121,6 +124,15 @@ export default function FeedScreen() {
                     />
                 }
             />
+
+            {/* Floating Action Button */}
+            <TouchableOpacity
+                style={styles.fab}
+                onPress={() => navigation.navigate('CreatePost')}
+                activeOpacity={0.8}
+            >
+                <Text style={styles.fabIcon}>✏️</Text>
+            </TouchableOpacity>
         </View>
     );
 }
@@ -153,5 +165,24 @@ const styles = StyleSheet.create({
         color: '#65676b',
         textAlign: 'center',
         lineHeight: 20,
+    },
+    fab: {
+        position: 'absolute',
+        right: 20,
+        bottom: 20,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#1877f2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    fabIcon: {
+        fontSize: 24,
     },
 });

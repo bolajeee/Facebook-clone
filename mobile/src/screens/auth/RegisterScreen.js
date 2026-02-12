@@ -29,15 +29,22 @@ export default function RegisterScreen({ navigation }) {
     const dispatch = useDispatch();
     const { isLoading } = useSelector((state) => state.auth);
 
-    const [name, setName] = useState('');
+    const [username, setUsername] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
     const handleRegister = async () => {
         // Validation
-        if (!name || !email || !password || !confirmPassword) {
+        if (!username || !firstName || !lastName || !email || !password || !confirmPassword) {
             Alert.alert('Error', 'Please fill in all fields');
+            return;
+        }
+
+        if (username.length < 3) {
+            Alert.alert('Error', 'Username must be at least 3 characters');
             return;
         }
 
@@ -57,7 +64,7 @@ export default function RegisterScreen({ navigation }) {
         }
 
         // Dispatch register action
-        const result = await dispatch(register({ name, email, password }));
+        const result = await dispatch(register({ username, firstName, lastName, email, password }));
 
         if (register.rejected.match(result)) {
             Alert.alert('Registration Failed', result.payload);
@@ -75,12 +82,31 @@ export default function RegisterScreen({ navigation }) {
                     <Text style={styles.logo}>facebook</Text>
                     <Text style={styles.subtitle}>Create a new account</Text>
 
-                    {/* Name Input */}
+                    {/* Username Input */}
                     <TextInput
                         style={styles.input}
-                        placeholder="Full Name"
-                        value={name}
-                        onChangeText={setName}
+                        placeholder="Username"
+                        value={username}
+                        onChangeText={setUsername}
+                        autoCapitalize="none"
+                        editable={!isLoading}
+                    />
+
+                    {/* First Name Input */}
+                    <TextInput
+                        style={styles.input}
+                        placeholder="First Name"
+                        value={firstName}
+                        onChangeText={setFirstName}
+                        editable={!isLoading}
+                    />
+
+                    {/* Last Name Input */}
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Last Name"
+                        value={lastName}
+                        onChangeText={setLastName}
                         editable={!isLoading}
                     />
 

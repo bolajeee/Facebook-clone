@@ -155,14 +155,14 @@ const login = catchAsync(async (req, res) => {
         throw new ApiError(400, error.details[0].message);
     }
 
-    const { identifier, password } = value; // identifier can be email or username
+    const { email, password } = value; // identifier can be email or username
 
     // Find user by email or username
     const user = await prisma.user.findFirst({
         where: {
             OR: [
-                { email: identifier.toLowerCase() },
-                { username: identifier.toLowerCase() }
+                { email: email.toLowerCase() },
+                { username: email.toLowerCase() }
             ]
         }
     });

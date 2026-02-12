@@ -35,11 +35,19 @@ export default function PostCard({ post }) {
             {/* Header: User info */}
             <View style={styles.header}>
                 <Image
-                    source={{ uri: post.author?.avatarUrl || 'https://via.placeholder.com/40' }}
+                    source={{
+                        uri: post.author?.avatar || post.author?.avatarUrl ||
+                            'https://ui-avatars.com/api/?name=' +
+                            encodeURIComponent(post.author?.username || post.author?.name || 'User')
+                    }}
                     style={styles.avatar}
                 />
                 <View style={styles.userInfo}>
-                    <Text style={styles.userName}>{post.author?.name || 'Unknown User'}</Text>
+                    <Text style={styles.userName}>
+                        {post.author?.firstName && post.author?.lastName
+                            ? `${post.author.firstName} ${post.author.lastName}`
+                            : post.author?.name || post.author?.username || 'Unknown User'}
+                    </Text>
                     <Text style={styles.timestamp}>
                         {formatTimestamp(post.createdAt)}
                     </Text>

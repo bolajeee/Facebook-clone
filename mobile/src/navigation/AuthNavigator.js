@@ -21,7 +21,7 @@ export default function AuthNavigator() {
     return (
         <Stack.Navigator
             screenOptions={{
-                headerShown: false, // We'll create custom headers in screens
+                headerShown: false, 
             }}
         >
             <Stack.Screen name="Login" component={LoginScreen} />
