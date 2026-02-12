@@ -4,8 +4,10 @@
     "description": "Production-grade social networking API server",
     "main": "src/index.js",
     "scripts": {
-        "start": "node src/index.js",
-        "dev": "nodemon src/index.js",
+        "start": "node start.js",
+        "dev": "nodemon start.js",
+        "dev:direct": "nodemon src/index.js",
+        "verify": "node verify-setup.js",
         "db:generate": "prisma generate",
         "db:push": "prisma db push",
         "db:migrate": "prisma migrate dev",

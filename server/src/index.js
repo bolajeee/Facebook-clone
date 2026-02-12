@@ -17,7 +17,7 @@ require('dotenv').config();
 const { prisma } = require('./config/database');
 const { redis } = require('./config/redis');
 const { setupSocketHandlers } = require('./socket/socketHandlers');
-const errorHandler = require('./middleware/errorHandler');
+const { errorHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 
 // Import of routes
@@ -30,9 +30,10 @@ const app = express();
 const server = createServer(app);
 
 // Socket.io setup with CORS
+// Allow connections from mobile apps (React Native) and web clients
 const io = new Server(server, {
     cors: {
-        origin: process.env.CLIENT_URL || "http://localhost:3000",
+        origin: "*", // Allow all origins in development (restrict in production)
         methods: ["GET", "POST"],
         credentials: true
     }
@@ -46,9 +47,32 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// CORS configuration
+// CORS configuration - Allow mobile app connections
 app.use(cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+
+        // In development, allow all origins
+        if (process.env.NODE_ENV === 'development') {
+            return callback(null, true);
+        }
+
+        // In production, check against whitelist
+        const allowedOrigins = [
+            process.env.CLIENT_URL,
+            'http://localhost:3000',
+            'http://localhost:19000', // Expo dev server
+            'http://localhost:19001',
+            'http://localhost:19002',
+        ];
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -106,6 +130,16 @@ app.get('/health', async (req, res) => {
             error: error.message
         });
     }
+});
+
+// Test endpoint for mobile app connection
+app.get('/api/test', (req, res) => {
+    res.json({
+        message: 'Mobile app connected successfully! 🎉',
+        timestamp: new Date().toISOString(),
+        server: 'Facebook Clone API',
+        version: '1.0.0'
+    });
 });
 
 // API Routes
