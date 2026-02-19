@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     View,
     Text,
@@ -26,20 +26,49 @@ import { uploadImageToCloudinary } from '../../utils/cloudinary';
  * - Image upload to Cloudinary
  * - Optimistic UI updates
  * - Loading states
+ * - Web support with file input
  */
 
 export default function CreatePostScreen({ navigation }) {
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
+    const fileInputRef = useRef(null);
 
     const [content, setContent] = useState('');
     const [selectedImage, setSelectedImage] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
 
     /**
+     * Handle web file input
+     */
+    const handleWebFileInput = (event) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            // Check if it's an image
+            if (!file.type.startsWith('image/')) {
+                Alert.alert('Error', 'Please select an image file');
+                return;
+            }
+
+            // Create local URL for preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setSelectedImage(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    /**
      * Request permissions and pick image from gallery
      */
     const pickImage = async () => {
+        // On web, use file input
+        if (Platform.OS === 'web') {
+            fileInputRef.current?.click();
+            return;
+        }
+
         try {
             // Request permission
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -73,6 +102,12 @@ export default function CreatePostScreen({ navigation }) {
      * Take photo with camera
      */
     const takePhoto = async () => {
+        // Camera not available on web
+        if (Platform.OS === 'web') {
+            Alert.alert('Not Available', 'Camera is not available on web. Please use "Choose from Gallery" instead.');
+            return;
+        }
+
         try {
             // Request permission
             const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -105,6 +140,12 @@ export default function CreatePostScreen({ navigation }) {
      * Show image picker options
      */
     const showImageOptions = () => {
+        if (Platform.OS === 'web') {
+            // On web, directly open file picker
+            pickImage();
+            return;
+        }
+
         Alert.alert(
             'Add Photo',
             'Choose an option',
@@ -121,6 +162,10 @@ export default function CreatePostScreen({ navigation }) {
      */
     const removeImage = () => {
         setSelectedImage(null);
+        // Reset file input on web
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     };
 
     /**
@@ -193,6 +238,17 @@ export default function CreatePostScreen({ navigation }) {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
+            {/* Hidden file input for web */}
+            {Platform.OS === 'web' && (
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handleWebFileInput}
+                />
+            )}
+
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Header */}
                 <View style={styles.header}>

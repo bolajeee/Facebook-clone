@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
 import postsReducer from './slices/postsSlice';
 import notificationsReducer from './slices/notificationsSlice';
+import usersReducer from './slices/usersSlice';
 
 /**
  * Redux Store Configuration
@@ -12,10 +13,11 @@ import notificationsReducer from './slices/notificationsSlice';
  * - Redux DevTools integration
  * - Thunk middleware by default
  * 
- * Our store has 3 main slices:
+ * Our store has 4 main slices:
  * - auth: User authentication state
  * - posts: Feed posts and post interactions
  * - notifications: Real-time notifications
+ * - users: User profiles and follow system
  */
 
 const store = configureStore({
@@ -23,6 +25,7 @@ const store = configureStore({
         auth: authReducer,
         posts: postsReducer,
         notifications: notificationsReducer,
+        users: usersReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

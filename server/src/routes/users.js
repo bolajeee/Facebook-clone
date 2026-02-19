@@ -1,27 +1,30 @@
 /**
  * User Routes
  * Handles user profile operations and follow system
- * Will be implemented in Phase 9
  */
 
 const express = require('express');
 const router = express.Router();
+const { authenticate } = require('../middleware/auth');
+const {
+    getUserProfile,
+    updateProfile,
+    followUser,
+    unfollowUser,
+    getFollowers,
+    getFollowing,
+    getUserPosts,
+} = require('../controllers/userController');
 
-// Placeholder routes - will be implemented in Phase 9
-router.get('/profile/:userId', (req, res) => {
-    res.status(501).json({ message: 'Get user profile - Coming in Phase 9' });
-});
+// Public routes (optional auth - shows different data if authenticated)
+router.get('/profile/:userId', authenticate, getUserProfile);
+router.get('/:userId/posts', authenticate, getUserPosts);
+router.get('/:userId/followers', getFollowers);
+router.get('/:userId/following', getFollowing);
 
-router.put('/profile', (req, res) => {
-    res.status(501).json({ message: 'Update profile - Coming in Phase 9' });
-});
-
-router.post('/follow/:userId', (req, res) => {
-    res.status(501).json({ message: 'Follow user - Coming in Phase 9' });
-});
-
-router.delete('/follow/:userId', (req, res) => {
-    res.status(501).json({ message: 'Unfollow user - Coming in Phase 9' });
-});
+// Protected routes (require authentication)
+router.put('/profile', authenticate, updateProfile);
+router.post('/follow/:userId', authenticate, followUser);
+router.delete('/follow/:userId', authenticate, unfollowUser);
 
 module.exports = router;
