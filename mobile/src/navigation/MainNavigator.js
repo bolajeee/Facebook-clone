@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { useSelector } from 'react-redux';
 import FeedScreen from '../screens/main/FeedScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
@@ -15,7 +16,7 @@ import CreatePostScreen from '../screens/main/CreatePostScreen';
  * Tabs:
  * - Home (Feed)
  * - Create Post (center button)
- * - Notifications
+ * - Notifications (with unread badge)
  * - Profile
  * 
  */
@@ -23,6 +24,8 @@ import CreatePostScreen from '../screens/main/CreatePostScreen';
 const Tab = createBottomTabNavigator();
 
 export default function MainNavigator() {
+    const { unreadCount } = useSelector((state) => state.notifications);
+
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
@@ -35,6 +38,20 @@ export default function MainNavigator() {
                         iconName = 'add-circle';
                     } else if (route.name === 'Notifications') {
                         iconName = focused ? 'notifications' : 'notifications-outline';
+
+                        // Show badge for unread notifications
+                        return (
+                            <View>
+                                <Ionicons name={iconName} size={size} color={color} />
+                                {unreadCount > 0 && (
+                                    <View style={styles.badge}>
+                                        <Text style={styles.badgeText}>
+                                            {unreadCount > 99 ? '99+' : unreadCount}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+                        );
                     } else if (route.name === 'Profile') {
                         iconName = focused ? 'person' : 'person-outline';
                     }
@@ -61,3 +78,23 @@ export default function MainNavigator() {
         </Tab.Navigator>
     );
 }
+
+const styles = StyleSheet.create({
+    badge: {
+        position: 'absolute',
+        right: -8,
+        top: -4,
+        backgroundColor: '#ff3b30',
+        borderRadius: 10,
+        minWidth: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+    },
+    badgeText: {
+        color: '#fff',
+        fontSize: 11,
+        fontWeight: 'bold',
+    },
+});
