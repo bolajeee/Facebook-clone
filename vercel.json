@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "buildCommand": "echo 'React Native mobile app - no build required for Vercel'",
+  "outputDirectory": ".",
+  "env": {
+    "SKIP_BUILD": "true"
+  }
+}
