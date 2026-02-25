@@ -8,6 +8,7 @@ import {
     ScrollView,
     ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import {
@@ -91,23 +92,51 @@ export default function ProfileScreen({ route }) {
 
     return (
         <ScrollView style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                {/* Avatar */}
+            {/* Cover Photo Section */}
+            <View style={styles.coverSection}>
+                {/* Cover Photo */}
                 <Image
                     source={{
-                        uri:
-                            profile.avatar ||
-                            'https://ui-avatars.com/api/?name=' +
-                            encodeURIComponent(profile.username),
+                        uri: profile.coverPhoto ||
+                            'https://via.placeholder.com/400x200?text=Cover+Photo',
                     }}
-                    style={styles.avatar}
+                    style={styles.coverPhoto}
                 />
 
-                {/* User info */}
+                {/* Edit Cover Button (only for own profile) */}
+                {isOwnProfile && (
+                    <TouchableOpacity style={styles.editCoverButton}>
+                        <Ionicons name="camera" size={20} color="#fff" />
+                    </TouchableOpacity>
+                )}
+
+                {/* Profile Picture Overlay */}
+                <View style={styles.profilePictureWrapper}>
+                    <Image
+                        source={{
+                            uri: profile.avatar ||
+                                'https://ui-avatars.com/api/?name=' +
+                                encodeURIComponent(profile.username),
+                        }}
+                        style={styles.profilePicture}
+                    />
+                    
+                    {/* Edit Profile Picture (only for own profile) */}
+                    {isOwnProfile && (
+                        <TouchableOpacity style={styles.editPictureButton}>
+                            <Ionicons name="camera" size={16} color="#fff" />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </View>
+
+            {/* Profile Info Section */}
+            <View style={styles.infoSection}>
+                {/* Name and username */}
                 <Text style={styles.displayName}>{displayName}</Text>
                 <Text style={styles.username}>@{profile.username}</Text>
 
+                {/* Bio */}
                 {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
 
                 {/* Stats */}
@@ -138,22 +167,30 @@ export default function ProfileScreen({ route }) {
                             </TouchableOpacity>
                         </>
                     ) : (
-                        <TouchableOpacity
-                            style={[
-                                styles.followButton,
-                                profile.isFollowing && styles.followingButton,
-                            ]}
-                            onPress={handleFollowToggle}
-                        >
-                            <Text
+                        <>
+                            <TouchableOpacity
                                 style={[
-                                    styles.followButtonText,
-                                    profile.isFollowing && styles.followingButtonText,
+                                    styles.followButton,
+                                    profile.isFollowing && styles.followingButton,
                                 ]}
+                                onPress={handleFollowToggle}
                             >
-                                {profile.isFollowing ? 'Following' : 'Follow'}
-                            </Text>
-                        </TouchableOpacity>
+                                <Text
+                                    style={[
+                                        styles.followButtonText,
+                                        profile.isFollowing && styles.followingButtonText,
+                                    ]}
+                                >
+                                    {profile.isFollowing ? 'Following' : 'Follow'}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.messageButton}>
+                                <Ionicons name="chatbubble-outline" size={20} color="#1877f2" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.moreButton}>
+                                <Ionicons name="ellipsis-horizontal" size={20} color="#1877f2" />
+                            </TouchableOpacity>
+                        </>
                     )}
                 </View>
             </View>
@@ -192,19 +229,59 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#65676b',
     },
-    header: {
+    coverSection: {
+        position: 'relative',
+        backgroundColor: '#f0f2f5',
+    },
+    coverPhoto: {
+        width: '100%',
+        height: 220,
+        backgroundColor: '#e4e6eb',
+    },
+    editCoverButton: {
+        position: 'absolute',
+        bottom: 12,
+        right: 12,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 24,
+    },
+    profilePictureWrapper: {
+        alignItems: 'center',
+        marginTop: -60,
+        marginBottom: 16,
+        position: 'relative',
+    },
+    profilePicture: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        borderWidth: 4,
+        borderColor: '#fff',
+        backgroundColor: '#e4e6eb',
+    },
+    editPictureButton: {
+        position: 'absolute',
+        bottom: 8,
+        right: 8,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#1877f2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    infoSection: {
+        alignItems: 'center',
         paddingHorizontal: 16,
+        paddingBottom: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#e4e6eb',
-    },
-    avatar: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: '#e4e6eb',
-        marginBottom: 12,
     },
     displayName: {
         fontSize: 24,
@@ -249,15 +326,17 @@ const styles = StyleSheet.create({
     },
     actions: {
         flexDirection: 'row',
-        gap: 12,
+        gap: 8,
         width: '100%',
+        marginTop: 12,
     },
     editButton: {
         flex: 1,
         paddingVertical: 10,
-        paddingHorizontal: 20,
+        paddingHorizontal: 12,
         borderRadius: 8,
         backgroundColor: '#e4e6eb',
+        justifyContent: 'center',
         alignItems: 'center',
     },
     editButtonText: {
@@ -268,9 +347,10 @@ const styles = StyleSheet.create({
     logoutButton: {
         flex: 1,
         paddingVertical: 10,
-        paddingHorizontal: 20,
+        paddingHorizontal: 12,
         borderRadius: 8,
-        backgroundColor: '#ff4444',
+        backgroundColor: '#f02849',
+        justifyContent: 'center',
         alignItems: 'center',
     },
     logoutButtonText: {
@@ -281,9 +361,10 @@ const styles = StyleSheet.create({
     followButton: {
         flex: 1,
         paddingVertical: 10,
-        paddingHorizontal: 20,
+        paddingHorizontal: 12,
         borderRadius: 8,
         backgroundColor: '#1877f2',
+        justifyContent: 'center',
         alignItems: 'center',
     },
     followButtonText: {
@@ -296,6 +377,22 @@ const styles = StyleSheet.create({
     },
     followingButtonText: {
         color: '#050505',
+    },
+    messageButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+        backgroundColor: '#f0f2f5',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    moreButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+        backgroundColor: '#f0f2f5',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     postsSection: {
         padding: 16,

@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useDispatch } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
 import { likePost, unlikePost, optimisticLike, optimisticUnlike } from '../store/slices/postsSlice';
 
 /**
@@ -11,10 +13,12 @@ import { likePost, unlikePost, optimisticLike, optimisticUnlike } from '../store
  * - Post content and image
  * - Like, comment, share buttons
  * - Optimistic UI updates for likes
+ * - Navigation to comments screen
  */
 
 export default function PostCard({ post }) {
     const dispatch = useDispatch();
+    const navigation = useNavigation();
 
     const handleLike = () => {
         if (post.isLikedByUser) {
@@ -28,6 +32,13 @@ export default function PostCard({ post }) {
             // Then API call
             dispatch(likePost(post.id));
         }
+    };
+
+    const handleCommentPress = () => {
+        navigation.navigate('Comments', {
+            postId: post.id,
+            postAuthor: post.author,
+        });
     };
 
     return (
@@ -85,20 +96,39 @@ export default function PostCard({ post }) {
                     onPress={handleLike}
                     activeOpacity={0.7}
                 >
+                    <Ionicons
+                        name={post.isLikedByUser ? 'heart' : 'heart-outline'}
+                        size={20}
+                        color={post.isLikedByUser ? '#f02849' : '#65676b'}
+                    />
                     <Text style={[
                         styles.actionText,
                         post.isLikedByUser && styles.actionTextActive
                     ]}>
-                        👍 Like
+                        Like
                     </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
-                    <Text style={styles.actionText}>💬 Comment</Text>
+                <TouchableOpacity 
+                    style={styles.actionButton}
+                    onPress={handleCommentPress}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons
+                        name="chatbubble-outline"
+                        size={20}
+                        color="#65676b"
+                    />
+                    <Text style={styles.actionText}>Comment</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
-                    <Text style={styles.actionText}>↗️ Share</Text>
+                    <Ionicons
+                        name="share-social-outline"
+                        size={20}
+                        color="#65676b"
+                    />
+                    <Text style={styles.actionText}>Share</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -190,6 +220,9 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingVertical: 8,
         alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 6,
     },
     actionText: {
         fontSize: 14,
@@ -197,6 +230,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     actionTextActive: {
-        color: '#1877f2',
+        color: '#f02849',
     },
 });
