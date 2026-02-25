@@ -8,10 +8,22 @@ import apiClient from './client';
 
 export const notificationsAPI = {
     /**
-     * Get user notifications
+     * Get user notifications with pagination
+     * @param {string} cursor - Pagination cursor
+     * @param {number} limit - Number of notifications to fetch
+     * @param {boolean} unreadOnly - Fetch only unread notifications
      */
-    getNotifications: () => {
-        return apiClient.get('/notifications');
+    getNotifications: (cursor = null, limit = 20, unreadOnly = false) => {
+        const params = { limit, unreadOnly };
+        if (cursor) params.cursor = cursor;
+        return apiClient.get('/notifications', { params });
+    },
+
+    /**
+     * Get unread notification count
+     */
+    getUnreadCount: () => {
+        return apiClient.get('/notifications/unread-count');
     },
 
     /**
@@ -27,5 +39,20 @@ export const notificationsAPI = {
      */
     markAllAsRead: () => {
         return apiClient.patch('/notifications/read-all');
+    },
+
+    /**
+     * Delete a notification
+     * @param {string} notificationId
+     */
+    deleteNotification: (notificationId) => {
+        return apiClient.delete(`/notifications/${notificationId}`);
+    },
+
+    /**
+     * Delete all read notifications
+     */
+    deleteAllRead: () => {
+        return apiClient.delete('/notifications/read');
     },
 };
