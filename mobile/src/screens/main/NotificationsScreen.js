@@ -6,9 +6,11 @@ import {
     FlatList,
     RefreshControl,
     ActivityIndicator,
+    TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
+import { fetchNotifications, markAsRead, markAllAsRead } from '../../store/slices/notificationsSlice';
 import NotificationItem from '../../components/NotificationItem';
 
 /**
@@ -19,124 +21,76 @@ import NotificationItem from '../../components/NotificationItem';
  * - User avatars and action descriptions
  * - Timestamps
  * - Mark as read functionality
+ * - Pull to refresh
+ * - Pagination
  */
+const dispatch = useDispatch();
+const { items: notifications, unreadCount, isLoading, isLoadingMore, hasMore, nextCursor, error } = useSelector(
+    (state) => state.notifications
+);
 
-// Mock notifications data - replace with Redux fetch action
-const mockNotifications = [
-    {
-        id: '1',
-        type: 'like',
-        actor: {
-            id: 'user1',
-            name: 'Sarah Johnson',
-            firstName: 'Sarah',
-            lastName: 'Johnson',
-            avatar: 'https://ui-avatars.com/api/?name=Sarah+Johnson',
-        },
-        message: 'liked your post',
-        createdAt: new Date(Date.now() - 300000).toISOString(),
-        isRead: false,
-    },
-    {
-        id: '2',
-        type: 'comment',
-        actor: {
-            id: 'user2',
-            name: 'Alex Chen',
-            firstName: 'Alex',
-            lastName: 'Chen',
-            avatar: 'https://ui-avatars.com/api/?name=Alex+Chen',
-        },
-        message: 'commented on your post',
-        createdAt: new Date(Date.now() - 1800000).toISOString(),
-        isRead: false,
-    },
-    {
-        id: '3',
-        type: 'follow',
-        actor: {
-            id: 'user3',
-            name: 'Emma Davis',
-            firstName: 'Emma',
-            lastName: 'Davis',
-            avatar: 'https://ui-avatars.com/api/?name=Emma+Davis',
-        },
-        message: 'started following you',
-        createdAt: new Date(Date.now() - 3600000).toISOString(),
-        isRead: true,
-        actionButton: 'Follow Back',
-    },
-    {
-        id: '4',
-        type: 'like',
-        actor: {
-            id: 'user4',
-            name: 'Michael Brown',
-            firstName: 'Michael',
-            lastName: 'Brown',
-            avatar: 'https://ui-avatars.com/api/?name=Michael+Brown',
-        },
-        message: 'liked your comment',
-        createdAt: new Date(Date.now() - 7200000).toISOString(),
-        isRead: true,
-    },
-    {
-        id: '5',
-        type: 'mention',
-        actor: {
-            id: 'user5',
-            name: 'Jessica White',
-            firstName: 'Jessica',
-            lastName: 'White',
-            avatar: 'https://ui-avatars.com/api/?name=Jessica+White',
-        },
-        message: 'mentioned you in a comment',
-        createdAt: new Date(Date.now() - 10800000).toISOString(),
-        isRead: true,
-    },
-];
+useEffect(() => {
+    // Fetch notifications on mount
+    dispatch(fetchNotifications({ cursor: null, limit: 20 }));
+}, [dispatch]);
 
-export default function NotificationsScreen() {
-    const dispatch = useDispatch();
-    const [notifications, setNotifications] = React.useState(mockNotifications);
-    const [isRefreshing, setIsRefreshing] = React.useState(false);
+const handleRefresh = useCallback(() => {
+    dispatch(fetchNotifications({ cursor: null, limit: 20 }));
+}, [dispatch]);
 
-    useEffect(() => {
-        // TODO: Replace with actual Redux fetch action
-        // dispatch(fetchNotifications());
-    }, [dispatch]);
+const handleLoadMore = useCallback(() => {
+    if (!isLoadingMore && hasMore && nextCursor) {
+        dispatch(fetchNotifications({ cursor: nextCursor, limit: 20 }));
+    }
+}, [isLoadingMore, hasMore, nextCursor, dispatch]);
 
-    const handleRefresh = useCallback(() => {
-        setIsRefreshing(true);
-        // TODO: Replace with actual Redux fetch action
-        setTimeout(() => setIsRefreshing(false), 1000);
-    }, []);
+const handleNotificationPress = (notification) => {
+    // Mark as read
+    if (!notification.isRead) {
+        dispatch(markAsRead(notification.id));
+    }
 
-    const handleNotificationPress = (notification) => {
-        // Mark as read
-        setNotifications(
-            notifications.map((n) =>
-                n.id === notification.id ? { ...n, isRead: true } : n
-            )
+    // TODO: Navigate to notification details or post
+    console.log('Notification pressed:', notification);
+};
+
+const handleActionPress = (notificationId) => {
+    console.log('Action pressed for notification:', notificationId);
+    // TODO: Handle action button press (e.g., follow back)
+};
+
+const handleMarkAllAsRead = () => {
+    dispatch(markAllAsRead());
+};
+
+const renderNotification = ({ item }) => (
+    <NotificationItem
+        notification={item}
+        onPress={() => handleNotificationPress(item)}
+        onActionPress={handleActionPress}
+    />
+);
+
+const renderEmpty = () => {
+    if (isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#1877f2" />
+            </View>
         );
-        // TODO: Navigate to notification details or post
-        console.log('Notification pressed:', notification);
-    };
+    }
 
-    const handleActionPress = (notificationId) => {
-        console.log('Action pressed for notification:', notificationId);
-        // TODO: Handle action button press (e.g., follow back)
-    };
+    if (error) {
+        return (
+            <View style={styles.emptyContainer}>
+                <Ionicons name="alert-circle-outline" size={64} color="#f02849" />
+                <Text style={styles.emptyText}>Failed to load notifications</Text>
+                <Text style={styles.emptySubtext}>{error}</Text>
+            </View>
+        );
+    }
 
-    const renderNotification = ({ item }) => (
-        <NotificationItem
-            notification={item}
-            onPress={() => handleNotificationPress(item)}
-            onActionPress={handleActionPress}
-        />
-    );
-
-    const renderEmpty = () => (
+    return (
         <View style={styles.emptyContainer}>
             <Ionicons name="notifications-outline" size={64} color="#ccc" />
             <Text style={styles.emptyText}>No notifications yet</Text>
@@ -145,33 +99,44 @@ export default function NotificationsScreen() {
             </Text>
         </View>
     );
+};
 
-    const unreadCount = notifications.filter((n) => !n.isRead).length;
-
+const renderFooter = () => {
+    if (!isLoadingMore) return null;
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Notifications</Text>
-            </View>
-
-            {/* Notifications List */}
-            <FlatList
-                data={notifications}
-                renderItem={renderNotification}
-                keyExtractor={(item) => item.id}
-                ListEmptyComponent={renderEmpty}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={isRefreshing}
-                        onRefresh={handleRefresh}
-                        tintColor="#1877f2"
-                    />
-                }
-                scrollEventThrottle={16}
-            />
+        <View style={styles.footerLoader}>
+            <ActivityIndicator size="small" color="#1877f2" />
         </View>
     );
+};
+
+return (
+    <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+            <Text style={styles.headerTitle}>Notifications</Text>
+        </View>
+
+        {/* Notifications List */}
+        <FlatList
+            data={notifications}
+            renderItem={renderNotification}
+            keyExtractor={(item) => item.id}
+            ListEmptyComponent={renderEmpty}
+            ListFooterComponent={renderFooter}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            refreshControl={
+                <RefreshControl
+                    refreshing={isLoading && !isLoadingMore}
+                    onRefresh={handleRefresh}
+                    tintColor="#1877f2"
+                />
+            }
+            scrollEventThrottle={16}
+        />
+    </View>
+);
 }
 
 const styles = StyleSheet.create({
@@ -180,6 +145,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 16,
         borderBottomWidth: 1,
@@ -190,11 +158,27 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         color: '#050505',
     },
+    markAllButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+    },
+    markAllText: {
+        fontSize: 14,
+        color: '#1877f2',
+        fontWeight: '600',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 40,
+    },
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 32,
+        paddingVertical: 40,
     },
     emptyText: {
         fontSize: 16,
@@ -207,5 +191,9 @@ const styles = StyleSheet.create({
         color: '#65676b',
         marginTop: 8,
         textAlign: 'center',
+    },
+    footerLoader: {
+        paddingVertical: 20,
+        alignItems: 'center',
     },
 });
