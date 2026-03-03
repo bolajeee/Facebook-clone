@@ -9,13 +9,17 @@ const { createCommentNotification } = require('../services/notificationService')
 const { emitCommentToPost } = require('../socket/socketHandlers');
 
 /**
- * Create a comment on a post
+ * Create a comment on a post or a reply to a comment
  */
 const createComment = catchAsync(async (req, res) => {
     const { postId } = req.params;
-    const { content } = req.body;
+    const { content, parentCommentId } = req.body;
     const userId = req.user.id;
     const io = req.app.get('io');
+
+    if (!content || content.trim().length === 0) {
+        throw new ApiError(400, 'Comment content is required');
+    }
 
     // Check if post exists
     const post = await prisma.post.findUnique({
@@ -27,12 +31,26 @@ const createComment = catchAsync(async (req, res) => {
         throw new ApiError(404, 'Post not found');
     }
 
+    // If replying to a comment, verify parent comment exists
+    let parentComment = null;
+    if (parentCommentId) {
+        parentComment = await prisma.comment.findUnique({
+            where: { id: parentCommentId },
+            select: { id: true, authorId: true, postId: true }
+        });
+
+        if (!parentComment || parentComment.postId !== postId) {
+            throw new ApiError(404, 'Parent comment not found or belongs to different post');
+        }
+    }
+
     // Create comment
     const comment = await prisma.comment.create({
         data: {
             content,
             postId,
-            authorId: userId
+            authorId: userId,
+            parentCommentId: parentCommentId || null
         },
         include: {
             author: {
@@ -50,6 +68,11 @@ const createComment = catchAsync(async (req, res) => {
     // Create notification for post author (if not commenting on own post)
     if (post.authorId !== userId) {
         await createCommentNotification(io, post.authorId, req.user, postId, comment.id);
+    }
+
+    // If replying to comment, also notify parent comment author (if different from post author)
+    if (parentComment && parentComment.authorId !== userId && parentComment.authorId !== post.authorId) {
+        await createCommentNotification(io, parentComment.authorId, req.user, postId, comment.id);
     }
 
     // Emit comment to post room
@@ -262,10 +285,67 @@ const getComment = catchAsync(async (req, res) => {
     });
 });
 
+/**
+ * Get replies to a comment
+ */
+const getCommentReplies = catchAsync(async (req, res) => {
+    const { commentId } = req.params;
+    const { cursor, limit = 20 } = req.query;
+    const take = Math.min(parseInt(limit), 50);
+
+    // Check if parent comment exists
+    const parentComment = await prisma.comment.findUnique({
+        where: { id: commentId },
+        select: { id: true }
+    });
+
+    if (!parentComment) {
+        throw new ApiError(404, 'Comment not found');
+    }
+
+    // Build query
+    const whereClause = { parentCommentId: commentId };
+    if (cursor) {
+        whereClause.id = { lt: cursor };
+    }
+
+    const replies = await prisma.comment.findMany({
+        where: whereClause,
+        take: take + 1,
+        orderBy: { createdAt: 'asc' },
+        include: {
+            author: {
+                select: {
+                    id: true,
+                    username: true,
+                    firstName: true,
+                    lastName: true,
+                    avatar: true
+                }
+            }
+        }
+    });
+
+    const hasMore = replies.length > take;
+    const repliesToReturn = hasMore ? replies.slice(0, -1) : replies;
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            replies: repliesToReturn,
+            pagination: {
+                hasMore,
+                nextCursor: hasMore ? repliesToReturn[repliesToReturn.length - 1].id : null
+            }
+        }
+    });
+});
+
 module.exports = {
     createComment,
     getPostComments,
     updateComment,
     deleteComment,
-    getComment
+    getComment,
+    getCommentReplies
 };

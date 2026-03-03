@@ -1,90 +1,68 @@
 /**
- * Cloudinary Upload Utility
+ * Image Upload Utility
  * 
- * Handles image uploads to Cloudinary.
- * In production, you'd get these credentials from your backend
- * or environment variables.
+ * Handles image uploads through the backend to Cloudinary.
+ * Backend keeps Cloudinary credentials secure.
  */
 
-const CLOUDINARY_CLOUD_NAME = 'your_cloud_name'; // Replace with your Cloudinary cloud name
-const CLOUDINARY_UPLOAD_PRESET = 'your_upload_preset'; // Replace with your upload preset
-
 /**
- * Upload image to Cloudinary
+ * Upload image through backend (secure method)
  * @param {string} imageUri - Local image URI from image picker
- * @returns {Promise<string>} - Cloudinary image URL
+ * @param {AxiosInstance} apiClient - API client instance with auth
+ * @returns {Promise<{imageUrl: string, publicId: string}>} - Cloudinary image URL and metadata
  */
-export const uploadImageToCloudinary = async (imageUri) => {
+export const uploadImage = async (imageUri, apiClient) => {
     try {
-        // Create form data
         const formData = new FormData();
 
-        // Extract filename from URI
+        // Extract filename and type from URI
         const filename = imageUri.split('/').pop();
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1]}` : 'image/jpeg';
 
-        formData.append('file', {
-            uri: imageUri,
-            name: filename,
-            type,
-        });
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-        // Upload to Cloudinary
-        const response = await fetch(
-            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-            {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error?.message || 'Upload failed');
-        }
-
-        // Return the secure URL
-        return data.secure_url;
-    } catch (error) {
-        console.error('Cloudinary upload error:', error);
-        throw error;
-    }
-};
-
-/**
- * Alternative: Upload through your backend
- * This is more secure as it keeps Cloudinary credentials on the server
- */
-export const uploadImageThroughBackend = async (imageUri, apiClient) => {
-    try {
-        const formData = new FormData();
-
-        const filename = imageUri.split('/').pop();
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : 'image/jpeg';
-
+        // Append image with proper structure
         formData.append('image', {
             uri: imageUri,
             name: filename,
             type,
         });
 
-        // Send to your backend endpoint
+        // Send to backend endpoint
         const response = await apiClient.post('/upload/image', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
         });
 
-        return response.data.imageUrl;
+        if (response.status !== 200) {
+            throw new Error(response.data?.message || 'Upload failed');
+        }
+
+        return response.data.data;
     } catch (error) {
-        console.error('Backend upload error:', error);
+        console.error('Image upload error:', error);
+        throw error;
+    }
+};
+
+/**
+ * Delete image from Cloudinary through backend
+ * @param {string} publicId - Cloudinary public ID
+ * @param {AxiosInstance} apiClient - API client instance with auth
+ */
+export const deleteImage = async (publicId, apiClient) => {
+    try {
+        const response = await apiClient.delete('/upload/image', {
+            data: { publicId }
+        });
+
+        if (response.status !== 200) {
+            throw new Error(response.data?.message || 'Delete failed');
+        }
+
+        return response.data;
+    } catch (error) {
+        console.error('Image deletion error:', error);
         throw error;
     }
 };

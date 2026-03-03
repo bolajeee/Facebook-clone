@@ -78,4 +78,14 @@ export const usersAPI = {
         if (cursor) params.cursor = cursor;
         return apiClient.get(`/users/${userId}/posts`, { params });
     },
+
+    /**
+     * Search for users by username, firstName, or lastName
+     * @param {string} query - Search query
+     * @param {number} limit - Number of results to fetch
+     */
+    searchUsers: (query, limit = 20) => {
+        const params = { query, limit };
+        return apiClient.get('/users/search', { params });
+    },
 };

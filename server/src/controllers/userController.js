@@ -363,6 +363,89 @@ const getUserPosts = catchAsync(async (req, res) => {
     });
 });
 
+/**
+ * Search for users by username, firstName, or lastName
+ */
+const searchUsers = catchAsync(async (req, res) => {
+    const { query, limit = 20 } = req.query;
+    const currentUserId = req.user?.id;
+
+    if (!query || query.trim().length === 0) {
+        throw new ApiError(400, 'Search query is required');
+    }
+
+    const searchTerm = query.trim().toLowerCase();
+    const take = Math.min(parseInt(limit), 50);
+
+    // Search users using OR condition for multiple fields
+    const users = await prisma.user.findMany({
+        where: {
+            OR: [
+                { username: { contains: searchTerm, mode: 'insensitive' } },
+                { firstName: { contains: searchTerm, mode: 'insensitive' } },
+                { lastName: { contains: searchTerm, mode: 'insensitive' } },
+            ],
+        },
+        take,
+        select: {
+            id: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
+            isVerified: true,
+            bio: true,
+            _count: {
+                select: {
+                    followers: true,
+                    posts: true,
+                },
+            },
+        },
+        orderBy: [
+            { firstName: 'asc' },
+            { lastName: 'asc' },
+            { createdAt: 'desc' },
+        ],
+    });
+
+    // Check if current user follows each user
+    const usersWithFollowStatus = await Promise.all(
+        users.map(async (user) => {
+            let isFollowing = false;
+            if (currentUserId && currentUserId !== user.id) {
+                const follow = await prisma.follow.findUnique({
+                    where: {
+                        followerId_followingId: {
+                            followerId: currentUserId,
+                            followingId: user.id,
+                        },
+                    },
+                });
+                isFollowing = !!follow;
+            }
+
+            return {
+                ...user,
+                followersCount: user._count.followers,
+                postsCount: user._count.posts,
+                isFollowing,
+                _count: undefined,
+            };
+        })
+    );
+
+    logger.debug(`User search: "${searchTerm}" returned ${usersWithFollowStatus.length} results`);
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            users: usersWithFollowStatus,
+            count: usersWithFollowStatus.length,
+        },
+    });
+});
+
 module.exports = {
     getUserProfile,
     updateProfile,
@@ -371,4 +454,5 @@ module.exports = {
     getFollowers,
     getFollowing,
     getUserPosts,
+    searchUsers,
 };

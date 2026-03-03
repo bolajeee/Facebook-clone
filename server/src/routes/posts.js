@@ -23,7 +23,8 @@ const {
     getPostComments,
     updateComment,
     deleteComment,
-    getComment
+    getComment,
+    getCommentReplies
 } = require('../controllers/commentController');
 
 // Import middleware
@@ -180,6 +181,17 @@ router.put('/comments/:commentId',
 router.delete('/comments/:commentId',
     authenticate,
     deleteComment
+);
+
+/**
+ * @route   GET /api/posts/comments/:commentId/replies
+ * @desc    Get replies to a specific comment
+ * @access  Public
+ * @query   { cursor?, limit? }
+ */
+router.get('/comments/:commentId/replies',
+    validateQuery(validatePagination),
+    getCommentReplies
 );
 
 module.exports = router;

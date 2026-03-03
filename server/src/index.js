@@ -25,6 +25,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const postRoutes = require('./routes/posts');
 const notificationRoutes = require('./routes/notifications');
+const uploadRoutes = require('./routes/upload');
 
 const app = express();
 const server = createServer(app);
@@ -147,6 +148,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // 404 handler for undefined routes
 app.use('*', (req, res) => {

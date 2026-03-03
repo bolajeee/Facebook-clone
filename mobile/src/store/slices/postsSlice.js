@@ -126,6 +126,21 @@ const postsSlice = createSlice({
             state.nextCursor = null;
             state.hasMore = true;
         },
+
+        // Delete a post from feed
+        deletePost: (state, action) => {
+            const postId = action.payload;
+            delete state.byId[postId];
+            state.allIds = state.allIds.filter(id => id !== postId);
+        },
+
+        // Update a post
+        updatePost: (state, action) => {
+            const post = action.payload;
+            if (state.byId[post.id]) {
+                state.byId[post.id] = { ...state.byId[post.id], ...post };
+            }
+        },
     },
     extraReducers: (builder) => {
         // Fetch Feed
@@ -221,5 +236,5 @@ const postsSlice = createSlice({
     },
 });
 
-export const { optimisticLike, optimisticUnlike, prependPost, clearFeed } = postsSlice.actions;
+export const { optimisticLike, optimisticUnlike, prependPost, clearFeed, deletePost, updatePost } = postsSlice.actions;
 export default postsSlice.reducer;

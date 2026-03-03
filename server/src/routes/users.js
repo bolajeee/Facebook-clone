@@ -14,7 +14,11 @@ const {
     getFollowers,
     getFollowing,
     getUserPosts,
+    searchUsers,
 } = require('../controllers/userController');
+
+// Search route (comes before :userId routes to avoid conflicts)
+router.get('/search', authenticate, searchUsers);
 
 // Public routes (optional auth - shows different data if authenticated)
 router.get('/profile/:userId', authenticate, getUserProfile);
