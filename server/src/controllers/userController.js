@@ -26,6 +26,7 @@ const getUserProfile = catchAsync(async (req, res) => {
             email: true,
             bio: true,
             avatar: true,
+            coverPhoto: true,
             isVerified: true,
             createdAt: true,
             _count: {
@@ -75,7 +76,7 @@ const getUserProfile = catchAsync(async (req, res) => {
  */
 const updateProfile = catchAsync(async (req, res) => {
     const userId = req.user.id;
-    const { firstName, lastName, bio, avatar } = req.body;
+    const { firstName, lastName, bio, avatar, coverPhoto } = req.body;
 
     // Build update data
     const updateData = {};
@@ -83,6 +84,7 @@ const updateProfile = catchAsync(async (req, res) => {
     if (lastName !== undefined) updateData.lastName = lastName;
     if (bio !== undefined) updateData.bio = bio;
     if (avatar !== undefined) updateData.avatar = avatar;
+    if (coverPhoto !== undefined) updateData.coverPhoto = coverPhoto;
 
     // Update user
     const updatedUser = await prisma.user.update({
@@ -96,6 +98,7 @@ const updateProfile = catchAsync(async (req, res) => {
             email: true,
             bio: true,
             avatar: true,
+            coverPhoto: true,
             isVerified: true,
             createdAt: true,
         },
@@ -109,6 +112,7 @@ const updateProfile = catchAsync(async (req, res) => {
         firstName: updatedUser.firstName,
         lastName: updatedUser.lastName,
         avatar: updatedUser.avatar,
+        coverPhoto: updatedUser.coverPhoto,
         isVerified: updatedUser.isVerified,
     });
 

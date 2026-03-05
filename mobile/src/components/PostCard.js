@@ -20,6 +20,15 @@ export default function PostCard({ post }) {
     const dispatch = useDispatch();
     const navigation = useNavigation();
 
+    // Debug: Log post data
+    console.log('PostCard rendering:', {
+        id: post.id,
+        hasImage: !!post.imageUrl,
+        imageUrl: post.imageUrl,
+        imageUrlType: typeof post.imageUrl,
+        content: post.content?.substring(0, 30)
+    });
+
     const handleLike = () => {
         if (post.isLikedByUser) {
             // Optimistic update first

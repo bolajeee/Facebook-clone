@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { postsAPI } from '../../api/posts';
+import { fetchUserPosts } from './usersSlice';
 
 /**
  * Posts Slice
@@ -159,6 +160,17 @@ const postsSlice = createSlice({
                 const { posts = [], pagination = {} } = responseData;
                 const { nextCursor, hasMore } = pagination;
 
+                // Debug: Log feed data
+                console.log('Feed fetched:', {
+                    totalPosts: posts.length,
+                    postsWithImages: posts.filter(p => p.imageUrl).length,
+                    samplePost: posts[0] ? {
+                        id: posts[0].id,
+                        hasImage: !!posts[0].imageUrl,
+                        imageUrl: posts[0].imageUrl
+                    } : null
+                });
+
                 // Add posts to normalized state
                 if (Array.isArray(posts)) {
                     posts.forEach((post) => {
@@ -237,6 +249,19 @@ const postsSlice = createSlice({
                 if (post) {
                     post.likesCount += 1;
                     post.isLikedByUser = true;
+                }
+            });
+
+        // Handle user posts from usersSlice
+        builder
+            .addCase(fetchUserPosts.fulfilled, (state, action) => {
+                const { posts = [] } = action.payload;
+
+                // Add user posts to normalized state
+                if (Array.isArray(posts)) {
+                    posts.forEach((post) => {
+                        state.byId[post.id] = post;
+                    });
                 }
             });
     },

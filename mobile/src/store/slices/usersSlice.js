@@ -78,7 +78,12 @@ export const fetchUserPosts = createAsyncThunk(
     async ({ userId, cursor = null, limit = 10 }, { rejectWithValue }) => {
         try {
             const response = await usersAPI.getUserPosts(userId, cursor, limit);
-            return { userId, ...response.data };
+            const responseData = response.data?.data || response.data;
+            return {
+                userId,
+                posts: responseData.posts || [],
+                pagination: responseData.pagination || {}
+            };
         } catch (error) {
             return rejectWithValue(
                 error.response?.data?.message || 'Failed to fetch user posts'
@@ -209,16 +214,29 @@ const usersSlice = createSlice({
                 state.error = null;
             })
             .addCase(fetchUserPosts.fulfilled, (state, action) => {
-                const { userId, posts, nextCursor, hasMore } = action.payload;
+                const { userId, posts = [], pagination = {} } = action.payload;
+                const { nextCursor, hasMore } = pagination;
 
                 if (!state.userPosts[userId]) {
                     state.userPosts[userId] = { postIds: [], nextCursor: null, hasMore: true };
                 }
 
-                const postIds = posts.map((p) => p.id);
-                state.userPosts[userId].postIds.push(...postIds);
-                state.userPosts[userId].nextCursor = nextCursor;
-                state.userPosts[userId].hasMore = hasMore;
+                if (Array.isArray(posts)) {
+                    const postIds = posts.map((p) => p.id);
+
+                    // If no cursor was provided, this is a fresh fetch - replace all posts
+                    if (!action.meta.arg.cursor) {
+                        state.userPosts[userId].postIds = postIds;
+                    } else {
+                        // Otherwise, append only new posts (avoid duplicates)
+                        const existingIds = new Set(state.userPosts[userId].postIds);
+                        const newPostIds = postIds.filter(id => !existingIds.has(id));
+                        state.userPosts[userId].postIds.push(...newPostIds);
+                    }
+
+                    state.userPosts[userId].nextCursor = nextCursor || null;
+                    state.userPosts[userId].hasMore = hasMore !== undefined ? hasMore : false;
+                }
 
                 state.isLoadingPosts = false;
             })

@@ -16,6 +16,7 @@ model User {
   lastName  String
   bio       String?
   avatar    String?  // Cloudinary URL
+  coverPhoto String? // Cover photo URL
   isVerified Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

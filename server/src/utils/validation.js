@@ -95,9 +95,9 @@ const schemas = {
             'string.empty': 'Comment is required'
         }),
 
-    // ID validation (CUID)
+    // ID validation (CUID/CUID2)
     id: Joi.string()
-        .pattern(new RegExp('^c[a-z0-9]{24}$'))
+        .pattern(new RegExp('^c[a-z0-9]{20,}$'))
         .required()
         .messages({
             'string.pattern.base': 'Invalid ID format',
@@ -106,7 +106,7 @@ const schemas = {
 
     // Pagination validation
     cursor: Joi.string()
-        .pattern(new RegExp('^c[a-z0-9]{24}$'))
+        .pattern(new RegExp('^c[a-z0-9]{20,}$'))
         .optional()
         .messages({
             'string.pattern.base': 'Invalid cursor format'
