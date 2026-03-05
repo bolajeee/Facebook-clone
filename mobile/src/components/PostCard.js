@@ -80,13 +80,22 @@ export default function PostCard({ post }) {
             )}
 
             {/* Image */}
-            {(post.imageUrl && post.imageUrl !== 'null') && (
-                <Image
-                    source={{ uri: post.imageUrl }}
-                    style={styles.postImage}
-                    resizeMode="cover"
-                    onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
-                />
+            {(post.imageUrl && post.imageUrl !== 'null') ? (
+                <>
+                    {console.log('Rendering image for post:', post.id, 'URL:', post.imageUrl)}
+                    <Image
+                        source={{ uri: post.imageUrl }}
+                        style={styles.postImage}
+                        resizeMode="cover"
+                        onError={(e) => {
+                            console.error('Image load error for post', post.id, ':', e.nativeEvent.error);
+                            console.error('Failed URL:', post.imageUrl);
+                        }}
+                        onLoad={() => console.log('Image loaded successfully for post:', post.id)}
+                    />
+                </>
+            ) : (
+                post.imageUrl && console.log('Image URL is "null" string for post:', post.id)
             )}
 
             {/* Stats: likes and comments count */}
