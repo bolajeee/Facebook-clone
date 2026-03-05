@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { API_URL } from '../config/api';
+import config from '../config/api';
 import store from '../store';
 import { addNotification } from '../store/slices/notificationsSlice';
 
@@ -24,8 +24,8 @@ export const initializeSocket = (accessToken) => {
         return socket;
     }
 
-    // Extract base URL (remove /api if present)
-    const baseUrl = API_URL.replace('/api', '');
+    // Use socketUrl from config, fallback to apiUrl without /api
+    const baseUrl = config.socketUrl || config.apiUrl?.replace('/api', '') || 'http://localhost:5000';
 
     socket = io(baseUrl, {
         auth: {

@@ -1,186 +1,139 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
+    TextInput,
     StyleSheet,
     FlatList,
     TouchableOpacity,
-    TextInput,
-    Image,
-    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
+    ActivityIndicator,
+    Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSelector } from 'react-redux';
+import { postsAPI } from '../../api/posts';
 
 /**
  * Comments Screen
  * 
- * Shows all comments on a post with:
- * - Top-level comments
- * - Nested replies (expandable)
- * - Comment input field
- * - User avatars and names
+ * Shows comments for a post with:
+ * - List of comments
+ * - Add new comment
+ * - Delete own comments
+ * - Keyboard handling
  */
-export default function CommentsScreen({ route }) {
+
+export default function CommentsScreen({ route, navigation }) {
     const { postId, postAuthor } = route.params;
-    const flatListRef = useRef(null);
-    const [comments, setComments] = useState([
-        {
-            id: '1',
-            author: { name: 'John Doe', avatar: 'https://ui-avatars.com/api/?name=John+Doe' },
-            content: 'Great post! Really enjoyed this.',
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-            likesCount: 5,
-            replies: [
-                {
-                    id: '1-1',
-                    author: { name: 'Jane Smith', avatar: 'https://ui-avatars.com/api/?name=Jane+Smith' },
-                    content: 'I agree! Very insightful.',
-                    createdAt: new Date(Date.now() - 1800000).toISOString(),
-                    likesCount: 2,
-                },
-            ],
-            showReplies: false,
-        },
-        {
-            id: '2',
-            author: { name: 'Mike Johnson', avatar: 'https://ui-avatars.com/api/?name=Mike+Johnson' },
-            content: 'Thanks for sharing this important information!',
-            createdAt: new Date(Date.now() - 7200000).toISOString(),
-            likesCount: 12,
-            replies: [],
-            showReplies: false,
-        },
-    ]);
+    const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState(null);
+    const inputRef = useRef(null);
 
-    const [commentText, setCommentText] = useState('');
-    const { user: currentUser } = useSelector((state) => state.auth);
+    useEffect(() => {
+        fetchComments();
+    }, [postId]);
 
-    const formatTimestamp = (timestamp) => {
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diff = now - date;
-        
-        const minutes = Math.floor(diff / 60000);
-        const hours = Math.floor(diff / 3600000);
-        const days = Math.floor(diff / 86400000);
-
-        if (minutes < 1) return 'just now';
-        if (minutes < 60) return `${minutes}m ago`;
-        if (hours < 24) return `${hours}h ago`;
-        if (days < 7) return `${days}d ago`;
-
-        return date.toLocaleDateString();
+    const fetchComments = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            console.log('Fetching comments for post:', postId);
+            const response = await postsAPI.getPostComments(postId);
+            console.log('Comments response:', response.data);
+            const commentsData = response.data?.data?.comments || response.data?.comments || [];
+            setComments(commentsData);
+        } catch (err) {
+            console.error('Fetch comments error:', err);
+            console.error('Error response:', err.response?.data);
+            setError(err.response?.data?.message || 'Failed to load comments');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleAddComment = () => {
-        if (!commentText.trim()) return;
+    const handleAddComment = async () => {
+        if (!newComment.trim()) return;
 
-        const newComment = {
-            id: `comment-${Date.now()}`,
-            author: {
-                name: currentUser?.name || currentUser?.username || 'You',
-                avatar: currentUser?.avatar,
-            },
-            content: commentText,
-            createdAt: new Date().toISOString(),
-            likesCount: 0,
-            replies: [],
-            showReplies: false,
-        };
+        try {
+            setIsSubmitting(true);
+            console.log('Adding comment to post:', postId);
+            const response = await postsAPI.addComment(postId, newComment.trim());
+            console.log('Add comment response:', response.data);
+            const comment = response.data?.data?.comment || response.data?.comment;
 
-        setComments([newComment, ...comments]);
-        setCommentText('');
-        flatListRef.current?.scrollToIndex({ index: 0, animated: true });
+            if (comment) {
+                // Add new comment to list
+                setComments([comment, ...comments]);
+                setNewComment('');
+                inputRef.current?.blur();
+            }
+        } catch (err) {
+            console.error('Add comment error:', err);
+            console.error('Error response:', err.response?.data);
+            alert(err.response?.data?.message || 'Failed to add comment');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
-    const toggleReplies = (commentId) => {
-        setComments(
-            comments.map((comment) =>
-                comment.id === commentId
-                    ? { ...comment, showReplies: !comment.showReplies }
-                    : comment
-            )
-        );
+    const handleDeleteComment = async (commentId) => {
+        try {
+            await postsAPI.deleteComment(commentId);
+            setComments(comments.filter(c => c.id !== commentId));
+        } catch (err) {
+            console.error('Delete comment error:', err);
+            alert('Failed to delete comment');
+        }
     };
 
-    const renderReply = (reply) => (
-        <View key={reply.id} style={styles.replyContainer}>
-            <Image
-                source={{ uri: reply.author.avatar }}
-                style={styles.replyAvatar}
-            />
-            <View style={styles.replyContent}>
-                <Text style={styles.replyName}>{reply.author.name}</Text>
-                <Text style={styles.replyText}>{reply.content}</Text>
-                <View style={styles.replyActions}>
-                    <Text style={styles.replyTime}>
-                        {formatTimestamp(reply.createdAt)}
-                    </Text>
-                    <Text style={styles.replyAction}>Like</Text>
-                    <Text style={styles.replyAction}>Reply</Text>
-                </View>
-            </View>
-        </View>
-    );
+    const renderComment = ({ item }) => {
+        const authorName = item.author?.firstName && item.author?.lastName
+            ? `${item.author.firstName} ${item.author.lastName}`
+            : item.author?.username || 'Unknown User';
 
-    const renderComment = ({ item }) => (
-        <View style={styles.commentContainer}>
-            {/* Comment */}
-            <View style={styles.comment}>
+        return (
+            <View style={styles.commentContainer}>
                 <Image
-                    source={{ uri: item.author.avatar }}
+                    source={{
+                        uri: item.author?.avatar ||
+                            'https://ui-avatars.com/api/?name=' +
+                            encodeURIComponent(item.author?.username || 'User')
+                    }}
                     style={styles.avatar}
                 />
                 <View style={styles.commentContent}>
-                    <View style={styles.commentBubble}>
-                        <Text style={styles.authorName}>{item.author.name}</Text>
-                        <Text style={styles.commentText}>{item.content}</Text>
-                    </View>
-                    <View style={styles.commentActions}>
-                        <Text style={styles.actionText}>
+                    <View style={styles.commentHeader}>
+                        <Text style={styles.authorName}>{authorName}</Text>
+                        <Text style={styles.timestamp}>
                             {formatTimestamp(item.createdAt)}
                         </Text>
-                        <Text style={styles.actionText}>Like</Text>
-                        <Text style={styles.actionText}>Reply</Text>
-                        {item.likesCount > 0 && (
-                            <Text style={styles.likeCount}>
-                                {item.likesCount} {item.likesCount === 1 ? 'like' : 'likes'}
-                            </Text>
-                        )}
                     </View>
+                    <Text style={styles.commentText}>{item.content}</Text>
                 </View>
             </View>
+        );
+    };
 
-            {/* Replies */}
-            {item.replies.length > 0 && (
-                <View style={styles.repliesSection}>
-                    {item.showReplies ? (
-                        <>
-                            {item.replies.map((reply) => renderReply(reply))}
-                            <TouchableOpacity
-                                style={styles.viewLessButton}
-                                onPress={() => toggleReplies(item.id)}
-                            >
-                                <Text style={styles.viewLessText}>Hide replies</Text>
-                            </TouchableOpacity>
-                        </>
-                    ) : (
-                        <TouchableOpacity
-                            style={styles.viewRepliesButton}
-                            onPress={() => toggleReplies(item.id)}
-                        >
-                            <Text style={styles.viewRepliesText}>
-                                View {item.replies.length} {item.replies.length === 1 ? 'reply' : 'replies'}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-            )}
+    const renderHeader = () => (
+        <View style={styles.header}>
+            <Text style={styles.headerTitle}>Comments</Text>
+            <Text style={styles.headerSubtitle}>
+                {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+            </Text>
         </View>
     );
+
+    if (isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#1877f2" />
+            </View>
+        );
+    }
 
     return (
         <KeyboardAvoidingView
@@ -188,54 +141,67 @@ export default function CommentsScreen({ route }) {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-            {/* Comments List */}
             <FlatList
-                ref={flatListRef}
                 data={comments}
                 renderItem={renderComment}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.commentsList}
-                scrollEventThrottle={16}
+                ListHeaderComponent={renderHeader}
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>
+                            No comments yet. Be the first to comment!
+                        </Text>
+                    </View>
+                }
+                contentContainerStyle={styles.listContent}
             />
 
-            {/* Input Section */}
+            {/* Input area */}
             <View style={styles.inputContainer}>
-                <Image
-                    source={{
-                        uri: currentUser?.avatar ||
-                            'https://ui-avatars.com/api/?name=' +
-                            encodeURIComponent(currentUser?.name || 'You'),
-                    }}
-                    style={styles.currentUserAvatar}
+                <TextInput
+                    ref={inputRef}
+                    style={styles.input}
+                    placeholder="Write a comment..."
+                    placeholderTextColor="#65676b"
+                    value={newComment}
+                    onChangeText={setNewComment}
+                    multiline
+                    maxLength={500}
+                    editable={!isSubmitting}
                 />
-                <View style={styles.inputWrapper}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Write a comment..."
-                        placeholderTextColor="#ccc"
-                        value={commentText}
-                        onChangeText={setCommentText}
-                        multiline
-                        maxHeight={100}
-                    />
-                    <TouchableOpacity
-                        style={[
-                            styles.submitButton,
-                            !commentText.trim() && styles.submitButtonDisabled,
-                        ]}
-                        onPress={handleAddComment}
-                        disabled={!commentText.trim()}
-                    >
-                        <Ionicons
-                            name="send"
-                            size={18}
-                            color={commentText.trim() ? '#1877f2' : '#ccc'}
-                        />
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                    style={[
+                        styles.sendButton,
+                        (!newComment.trim() || isSubmitting) && styles.sendButtonDisabled
+                    ]}
+                    onPress={handleAddComment}
+                    disabled={!newComment.trim() || isSubmitting}
+                >
+                    {isSubmitting ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                        <Ionicons name="send" size={20} color="#fff" />
+                    )}
+                </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>
     );
+}
+
+function formatTimestamp(timestamp) {
+    const now = new Date();
+    const date = new Date(timestamp);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return date.toLocaleDateString();
 }
 
 const styles = StyleSheet.create({
@@ -243,157 +209,103 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff',
     },
-    commentsList: {
-        paddingVertical: 12,
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+    },
+    listContent: {
+        flexGrow: 1,
+    },
+    header: {
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e4e6eb',
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#050505',
+    },
+    headerSubtitle: {
+        fontSize: 14,
+        color: '#65676b',
+        marginTop: 4,
     },
     commentContainer: {
-        paddingHorizontal: 12,
-        paddingBottom: 8,
-    },
-    comment: {
         flexDirection: 'row',
-        gap: 8,
+        padding: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f2f5',
     },
     avatar: {
         width: 36,
         height: 36,
         borderRadius: 18,
-        marginTop: 4,
+        backgroundColor: '#e4e6eb',
     },
     commentContent: {
         flex: 1,
+        marginLeft: 10,
     },
-    commentBubble: {
-        backgroundColor: '#f0f2f5',
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+    commentHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
     },
     authorName: {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: '600',
         color: '#050505',
-        marginBottom: 2,
+        marginRight: 8,
+    },
+    timestamp: {
+        fontSize: 12,
+        color: '#65676b',
     },
     commentText: {
-        fontSize: 13,
+        fontSize: 14,
         color: '#050505',
         lineHeight: 18,
     },
-    commentActions: {
-        flexDirection: 'row',
-        gap: 12,
-        marginTop: 6,
+    emptyContainer: {
+        padding: 40,
         alignItems: 'center',
     },
-    actionText: {
-        fontSize: 12,
+    emptyText: {
+        fontSize: 15,
         color: '#65676b',
-        fontWeight: '500',
-    },
-    likeCount: {
-        fontSize: 12,
-        color: '#65676b',
-        marginLeft: 4,
-    },
-    repliesSection: {
-        marginLeft: 44,
-        marginTop: 8,
-        borderLeftWidth: 2,
-        borderLeftColor: '#e4e6eb',
-        paddingLeft: 12,
-    },
-    viewRepliesButton: {
-        paddingVertical: 4,
-    },
-    viewRepliesText: {
-        fontSize: 13,
-        color: '#1877f2',
-        fontWeight: '500',
-    },
-    viewLessButton: {
-        paddingVertical: 8,
-    },
-    viewLessText: {
-        fontSize: 13,
-        color: '#1877f2',
-        fontWeight: '500',
-    },
-    replyContainer: {
-        flexDirection: 'row',
-        gap: 8,
-        marginBottom: 8,
-    },
-    replyAvatar: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        marginTop: 4,
-    },
-    replyContent: {
-        flex: 1,
-    },
-    replyName: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#050505',
-        marginBottom: 2,
-    },
-    replyText: {
-        fontSize: 12,
-        color: '#050505',
-        lineHeight: 16,
-    },
-    replyActions: {
-        flexDirection: 'row',
-        gap: 10,
-        marginTop: 4,
-        alignItems: 'center',
-    },
-    replyTime: {
-        fontSize: 11,
-        color: '#65676b',
-    },
-    replyAction: {
-        fontSize: 11,
-        color: '#65676b',
-        fontWeight: '500',
+        textAlign: 'center',
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'flex-end',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+        padding: 12,
         borderTopWidth: 1,
         borderTopColor: '#e4e6eb',
         backgroundColor: '#fff',
-        gap: 8,
-    },
-    currentUserAvatar: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-    },
-    inputWrapper: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        gap: 8,
     },
     input: {
         flex: 1,
+        maxHeight: 100,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
         backgroundColor: '#f0f2f5',
         borderRadius: 20,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        fontSize: 13,
+        fontSize: 15,
         color: '#050505',
-        maxHeight: 80,
     },
-    submitButton: {
-        padding: 6,
+    sendButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#1877f2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 8,
     },
-    submitButtonDisabled: {
-        opacity: 0.5,
+    sendButtonDisabled: {
+        backgroundColor: '#bcc0c4',
     },
 });

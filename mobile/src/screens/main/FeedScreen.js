@@ -4,10 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import { fetchFeed, clearFeed } from '../../store/slices/postsSlice';
-import { fetchStories } from '../../store/slices/storiesSlice';
 import PostCard from '../../components/PostCard';
-import FeedHeader from '../../components/FeedHeader';
-import StoryCarousel from '../../components/StoryCarousel';
 import SkeletonLoader from '../../components/SkeletonLoader';
 
 /**
@@ -38,9 +35,6 @@ export default function FeedScreen() {
         error,
     } = useSelector((state) => state.posts);
 
-    const { userStories = {}, allStories = [] } = useSelector((state) => state.stories);
-    const { user: currentUser } = useSelector((state) => state.auth);
-
     // Convert normalized state to array for FlashList
     const posts = allIds.map((id) => byId[id]);
 
@@ -49,8 +43,6 @@ export default function FeedScreen() {
         if (allIds.length === 0 && !isLoading) {
             dispatch(fetchFeed({ cursor: null, limit: 10 }));
         }
-        // Fetch stories
-        dispatch(fetchStories());
     }, []);
 
     // Pull to refresh
@@ -112,23 +104,6 @@ export default function FeedScreen() {
         );
     };
 
-    const renderListHeader = () => (
-        <View style={styles.listHeader}>
-            <FeedHeader 
-                onSearchPress={() => navigation.navigate('Search')}
-                onMessengerPress={() => navigation.navigate('MessagesTab')}
-                onFriendsPress={() => console.log('Friends')}
-                onVideoCallPress={() => console.log('Video call')}
-            />
-            <StoryCarousel 
-                stories={allStories}
-                userProfile={currentUser}
-                onCreateStoryPress={() => console.log('Create story')}
-                onStoryPress={(story) => console.log('View story', story.id)}
-            />
-        </View>
-    );
-
     return (
         <View style={styles.container}>
             <FlashList
@@ -138,7 +113,6 @@ export default function FeedScreen() {
                 estimatedItemSize={400}
                 onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.5}
-                ListHeaderComponent={renderListHeader}
                 ListFooterComponent={renderFooter}
                 ListEmptyComponent={renderEmpty}
                 refreshControl={
@@ -167,9 +141,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f0f2f5',
-    },
-    listHeader: {
-        backgroundColor: '#fff',
     },
     footer: {
         paddingVertical: 20,

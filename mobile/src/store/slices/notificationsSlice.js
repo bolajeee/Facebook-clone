@@ -95,19 +95,21 @@ const notificationsSlice = createSlice({
                 state.error = null;
             })
             .addCase(fetchNotifications.fulfilled, (state, action) => {
-                const { notifications, unreadCount, pagination } = action.payload;
+                const { notifications = [], unreadCount = 0, pagination = {} } = action.payload.data || action.payload;
 
                 if (action.meta.arg?.cursor) {
                     // Append for pagination
-                    state.items.push(...notifications);
+                    if (Array.isArray(notifications)) {
+                        state.items.push(...notifications);
+                    }
                 } else {
                     // Replace for initial load
-                    state.items = notifications;
+                    state.items = Array.isArray(notifications) ? notifications : [];
                 }
 
                 state.unreadCount = unreadCount;
-                state.hasMore = pagination.hasMore;
-                state.nextCursor = pagination.nextCursor;
+                state.hasMore = pagination.hasMore || false;
+                state.nextCursor = pagination.nextCursor || null;
                 state.isLoading = false;
                 state.isLoadingMore = false;
             })
@@ -131,9 +133,12 @@ const notificationsSlice = createSlice({
         // Mark All as Read
         builder
             .addCase(markAllAsRead.fulfilled, (state) => {
-                state.items.forEach((notification) => {
-                    notification.isRead = true;
-                });
+                if (state.items && Array.isArray(state.items)) {
+                    state.items = state.items.map((notification) => ({
+                        ...notification,
+                        isRead: true
+                    }));
+                }
                 state.unreadCount = 0;
             });
     },

@@ -61,10 +61,13 @@ apiClient.interceptors.response.use(
                     refreshToken,
                 });
 
-                const { accessToken } = response.data;
+                const { accessToken, refreshToken: newRefreshToken } = response.data.data;
 
-                // Save new access token
+                // Save new tokens
                 await AsyncStorage.setItem('accessToken', accessToken);
+                if (newRefreshToken) {
+                    await AsyncStorage.setItem('refreshToken', newRefreshToken);
+                }
 
                 // Retry original request with new token
                 originalRequest.headers.Authorization = `Bearer ${accessToken}`;

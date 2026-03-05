@@ -126,13 +126,13 @@ export default function LoginScreen({ navigation }) {
                 </TouchableOpacity>
 
                 {/* Test Connection Button (for debugging) */}
-                <TouchableOpacity
+                {/* <TouchableOpacity
                     style={styles.testButton}
                     onPress={handleTestConnection}
                     disabled={isLoading}
                 >
                     <Text style={styles.testButtonText}>🔧 Test Server Connection</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
             </View>
         </KeyboardAvoidingView>
     );

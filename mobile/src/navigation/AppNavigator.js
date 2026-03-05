@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { checkAuth } from '../store/slices/authSlice';
 import { initializeSocket, disconnectSocket } from '../services/socket';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
+import CommentsScreen from '../screens/main/CommentsScreen';
 import SplashScreen from '../screens/SplashScreen';
 
 /**
@@ -20,6 +22,8 @@ import SplashScreen from '../screens/SplashScreen';
  * - If authenticated -> Show main app + connect socket
  * - If not authenticated -> Show login/register
  */
+
+const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
     const dispatch = useDispatch();
@@ -51,7 +55,22 @@ export default function AppNavigator() {
 
     return (
         <NavigationContainer>
-            {isAuthenticated ? <MainNavigator /> : <AuthNavigator />}
+            {isAuthenticated ? (
+                <Stack.Navigator screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="MainTabs" component={MainNavigator} />
+                    <Stack.Screen
+                        name="Comments"
+                        component={CommentsScreen}
+                        options={{
+                            headerShown: true,
+                            headerTitle: 'Comments',
+                            presentation: 'card',
+                        }}
+                    />
+                </Stack.Navigator>
+            ) : (
+                <AuthNavigator />
+            )}
         </NavigationContainer>
     );
 }

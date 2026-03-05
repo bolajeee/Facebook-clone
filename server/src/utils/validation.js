@@ -183,13 +183,23 @@ const validateProfileUpdate = (data) => {
  */
 const validateCreatePost = (data) => {
     const schema = Joi.object({
-        content: schemas.postContent,
+        content: Joi.string()
+            .max(2000)
+            .trim()
+            .allow('')
+            .optional()
+            .messages({
+                'string.max': 'Post content must not exceed 2000 characters'
+            }),
         imageUrl: Joi.string()
             .uri()
             .optional()
+            .allow(null)
             .messages({
                 'string.uri': 'Image URL must be a valid URL'
             })
+    }).or('content', 'imageUrl').messages({
+        'object.missing': 'Post must have either content or an image'
     });
 
     return schema.validate(data, { abortEarly: false });
@@ -200,8 +210,22 @@ const validateCreatePost = (data) => {
  */
 const validateCreateComment = (data) => {
     const schema = Joi.object({
-        content: schemas.commentContent,
-        postId: schemas.id
+        content: Joi.string()
+            .min(1)
+            .max(500)
+            .trim()
+            .required()
+            .messages({
+                'string.min': 'Comment cannot be empty',
+                'string.max': 'Comment must not exceed 500 characters',
+                'string.empty': 'Comment is required'
+            }),
+        parentCommentId: Joi.string()
+            .pattern(new RegExp('^c[a-z0-9]{24}$'))
+            .optional()
+            .messages({
+                'string.pattern.base': 'Invalid parent comment ID format'
+            })
     });
 
     return schema.validate(data, { abortEarly: false });

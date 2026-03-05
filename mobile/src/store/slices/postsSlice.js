@@ -155,18 +155,22 @@ const postsSlice = createSlice({
                 state.error = null;
             })
             .addCase(fetchFeed.fulfilled, (state, action) => {
-                const { posts, nextCursor, hasMore } = action.payload;
+                const responseData = action.payload?.data || action.payload;
+                const { posts = [], pagination = {} } = responseData;
+                const { nextCursor, hasMore } = pagination;
 
                 // Add posts to normalized state
-                posts.forEach((post) => {
-                    state.byId[post.id] = post;
-                    if (!state.allIds.includes(post.id)) {
-                        state.allIds.push(post.id);
-                    }
-                });
+                if (Array.isArray(posts)) {
+                    posts.forEach((post) => {
+                        state.byId[post.id] = post;
+                        if (!state.allIds.includes(post.id)) {
+                            state.allIds.push(post.id);
+                        }
+                    });
+                }
 
-                state.nextCursor = nextCursor;
-                state.hasMore = hasMore;
+                state.nextCursor = nextCursor || null;
+                state.hasMore = hasMore !== undefined ? hasMore : false;
                 state.isLoading = false;
                 state.isLoadingMore = false;
                 state.isRefreshing = false;
@@ -184,9 +188,12 @@ const postsSlice = createSlice({
                 state.isLoading = true;
             })
             .addCase(createPost.fulfilled, (state, action) => {
-                const post = action.payload;
-                state.byId[post.id] = post;
-                state.allIds.unshift(post.id);
+                const responseData = action.payload?.data;
+                if (responseData && responseData.post) {
+                    const post = responseData.post;
+                    state.byId[post.id] = post;
+                    state.allIds.unshift(post.id);
+                }
                 state.isLoading = false;
             })
             .addCase(createPost.rejected, (state, action) => {
@@ -199,17 +206,16 @@ const postsSlice = createSlice({
             .addCase(likePost.fulfilled, (state, action) => {
                 const { postId, like } = action.payload;
                 const post = state.byId[postId];
-                if (post) {
-                    post.isLikedByUser = true;
-                    // Update with actual data from server
-                    post.likesCount = like.post.likesCount;
+                if (post && like?.data) {
+                    post.isLikedByUser = like.data.isLiked;
+                    post.likesCount = like.data.likesCount;
                 }
             })
             .addCase(likePost.rejected, (state, action) => {
                 // Revert optimistic update on error
                 const postId = action.meta.arg;
                 const post = state.byId[postId];
-                if (post) {
+                if (post && post.likesCount > 0) {
                     post.likesCount -= 1;
                     post.isLikedByUser = false;
                 }

@@ -71,11 +71,12 @@ export default function PostCard({ post }) {
             )}
 
             {/* Image */}
-            {post.imageUrl && (
+            {(post.imageUrl && post.imageUrl !== 'null') && (
                 <Image
                     source={{ uri: post.imageUrl }}
                     style={styles.postImage}
                     resizeMode="cover"
+                    onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
                 />
             )}
 
@@ -109,7 +110,7 @@ export default function PostCard({ post }) {
                     </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.actionButton}
                     onPress={handleCommentPress}
                     activeOpacity={0.7}

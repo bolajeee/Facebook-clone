@@ -15,7 +15,6 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useDispatch, useSelector } from 'react-redux';
 import { createPost, prependPost } from '../../store/slices/postsSlice';
-import { uploadImageToCloudinary } from '../../utils/cloudinary';
 
 /**
  * Create Post Screen
@@ -23,10 +22,11 @@ import { uploadImageToCloudinary } from '../../utils/cloudinary';
  * Allows users to create new posts with:
  * - Text content
  * - Optional image (from camera or gallery)
- * - Image upload to Cloudinary
  * - Optimistic UI updates
  * - Loading states
  * - Web support with file input
+ * 
+ * Note: Image upload to Cloudinary is handled by backend
  */
 
 export default function CreatePostScreen({ navigation }) {
@@ -181,47 +181,19 @@ export default function CreatePostScreen({ navigation }) {
         setIsUploading(true);
 
         try {
-            let imageUrl = null;
-
-            // Upload image if selected
-            if (selectedImage) {
-                imageUrl = await uploadImageToCloudinary(selectedImage);
-            }
-
             // Create post data
             const postData = {
-                content: content.trim(),
-                imageUrl,
+                content: content.trim() || '',
+                imageUrl: null, // Image upload not implemented yet
             };
 
-            // Optimistic update: add post to feed immediately
-            const optimisticPost = {
-                id: `temp-${Date.now()}`, // Temporary ID
-                content: postData.content,
-                imageUrl: postData.imageUrl,
-                author: {
-                    id: user?.id,
-                    name: user?.firstName && user?.lastName
-                        ? `${user.firstName} ${user.lastName}`
-                        : user?.username || 'Unknown User',
-                    avatarUrl: user?.avatar || null,
-                },
-                likesCount: 0,
-                commentsCount: 0,
-                isLikedByUser: false,
-                createdAt: new Date().toISOString(),
-            };
+            // Send to backend first (no optimistic update to avoid temp ID issues)
+            const result = await dispatch(createPost(postData)).unwrap();
 
-            dispatch(prependPost(optimisticPost));
-
-            // Navigate back immediately (optimistic)
+            // Navigate back after success
             navigation.goBack();
 
-            // Send to backend
-            await dispatch(createPost(postData)).unwrap();
-
-            // Success
-            Alert.alert('Success', 'Post created successfully!');
+            console.log('Post created successfully!');
         } catch (error) {
             console.error('Create post error:', error);
             Alert.alert(

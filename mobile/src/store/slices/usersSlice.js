@@ -17,7 +17,8 @@ export const fetchUserProfile = createAsyncThunk(
     async (userId, { rejectWithValue }) => {
         try {
             const response = await usersAPI.getUserProfile(userId);
-            return response.data.user;
+            // Backend returns { status, data: { user } }
+            return response.data?.data?.user || response.data?.user;
         } catch (error) {
             return rejectWithValue(
                 error.response?.data?.message || 'Failed to fetch user profile'
@@ -137,7 +138,9 @@ const usersSlice = createSlice({
             })
             .addCase(fetchUserProfile.fulfilled, (state, action) => {
                 const user = action.payload;
-                state.profiles[user.id] = user;
+                if (user && user.id) {
+                    state.profiles[user.id] = user;
+                }
                 state.isLoadingProfile = false;
             })
             .addCase(fetchUserProfile.rejected, (state, action) => {

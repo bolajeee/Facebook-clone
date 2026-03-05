@@ -23,7 +23,7 @@ export const login = createAsyncThunk(
     async (credentials, { rejectWithValue }) => {
         try {
             const response = await authAPI.login(credentials);
-            const { user, accessToken, refreshToken } = response.data;
+            const { user, accessToken, refreshToken } = response.data.data;
 
             // Persist tokens and user data
             await AsyncStorage.multiSet([
@@ -47,7 +47,7 @@ export const register = createAsyncThunk(
     async (userData, { rejectWithValue }) => {
         try {
             const response = await authAPI.register(userData);
-            const { user, accessToken, refreshToken } = response.data;
+            const { user, accessToken, refreshToken } = response.data.data;
 
             // Persist tokens and user data
             await AsyncStorage.multiSet([
