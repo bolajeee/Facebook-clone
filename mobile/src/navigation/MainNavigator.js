@@ -8,15 +8,16 @@ import ProfileScreen from '../screens/main/ProfileScreen';
 import CreatePostScreen from '../screens/main/CreatePostScreen';
 
 /**
- * Main Navigator
+ * Main Navigator (Modernized)
  * 
- * Bottom tab navigator for the main app screens.
+ * Bottom tab navigator with 5 tabs:
+ * - Home (Feed)
+ * - Friends
+ * - Create Post (center action)
+ * - Video/Reels
+ * - Menu (Profile)
  * 
- * Tabs:
- * - Feed (Home)
- * - Create Post
- * - Notifications (with unread badge)
- * - Profile
+ * Modern design with active state highlighting
  */
 
 const Tab = createBottomTabNavigator();
@@ -29,50 +30,118 @@ export default function MainNavigator() {
             screenOptions={({ route }) => ({
                 tabBarIcon: ({ focused, color, size }) => {
                     let iconName;
+                    let isCenterIcon = false;
 
                     if (route.name === 'Feed') {
                         iconName = focused ? 'home' : 'home-outline';
+                    } else if (route.name === 'Friends') {
+                        iconName = focused ? 'people' : 'people-outline';
                     } else if (route.name === 'CreatePost') {
                         iconName = 'add-circle';
-                    } else if (route.name === 'Notifications') {
-                        iconName = focused ? 'notifications' : 'notifications-outline';
-                        
-                        // Show badge for unread notifications
-                        return (
-                            <View>
-                                <Ionicons name={iconName} size={size} color={color} />
-                                {unreadCount > 0 && (
-                                    <View style={styles.badge}>
-                                        <Text style={styles.badgeText}>
-                                            {unreadCount > 99 ? '99+' : unreadCount}
-                                        </Text>
-                                    </View>
-                                )}
-                            </View>
-                        );
-                    } else if (route.name === 'Profile') {
-                        iconName = focused ? 'person' : 'person-outline';
+                        isCenterIcon = true;
+                    } else if (route.name === 'Video') {
+                        iconName = focused ? 'play-circle' : 'play-circle-outline';
+                    } else if (route.name === 'Menu') {
+                        iconName = focused ? 'menu' : 'menu';
                     }
 
-                    return <Ionicons name={iconName} size={size} color={color} />;
+                    // Show badge for unread notifications (on home tab)
+                    if (route.name === 'Feed' && unreadCount > 0) {
+                        return (
+                            <View>
+                                <Ionicons 
+                                    name={iconName} 
+                                    size={isCenterIcon ? 28 : size} 
+                                    color={color}
+                                />
+                                <View style={styles.badge}>
+                                    <Text style={styles.badgeText}>
+                                        {unreadCount > 99 ? '99+' : unreadCount}
+                                    </Text>
+                                </View>
+                            </View>
+                        );
+                    }
+
+                    return (
+                        <Ionicons 
+                            name={iconName} 
+                            size={isCenterIcon ? 28 : size} 
+                            color={color}
+                        />
+                    );
                 },
                 tabBarActiveTintColor: '#1877f2',
-                tabBarInactiveTintColor: 'gray',
+                tabBarInactiveTintColor: '#65676b',
+                tabBarStyle: {
+                    backgroundColor: '#fff',
+                    borderTopWidth: 1,
+                    borderTopColor: '#e4e6eb',
+                    paddingBottom: 4,
+                },
                 headerShown: false,
+                tabBarLabel: ({ focused }) => {
+                    const labels = {
+                        'Feed': 'Home',
+                        'Friends': 'Friends',
+                        'CreatePost': '',
+                        'Video': 'Video',
+                        'Menu': 'Menu',
+                    };
+                    
+                    // Hide label for create post button
+                    if (route.name === 'CreatePost') {
+                        return null;
+                    }
+
+                    return (
+                        <Text style={[
+                            styles.label,
+                            focused && styles.labelActive
+                        ]}>
+                            {labels[route.name]}
+                        </Text>
+                    );
+                },
             })}
         >
-            <Tab.Screen name="Feed" component={FeedScreen} />
+            <Tab.Screen 
+                name="Feed" 
+                component={FeedScreen}
+                options={{
+                    tabBarTestID: 'home-tab',
+                }}
+            />
+            <Tab.Screen 
+                name="Friends" 
+                component={ProfileScreen}
+                options={{
+                    tabBarLabel: 'Friends',
+                }}
+            />
             <Tab.Screen
                 name="CreatePost"
                 component={CreatePostScreen}
                 options={{
-                    tabBarLabel: 'Create',
                     headerShown: true,
                     headerTitle: 'Create Post',
+                    tabBarLabel: '',
                 }}
             />
-            <Tab.Screen name="Notifications" component={NotificationsScreen} />
-            <Tab.Screen name="Profile" component={ProfileScreen} />
+            <Tab.Screen 
+                name="Video" 
+                component={FeedScreen}
+                options={{
+                    tabBarLabel: 'Video',
+                }}
+            />
+            <Tab.Screen 
+                name="Menu" 
+                component={ProfileScreen}
+                options={{
+                    tabBarLabel: 'Menu',
+                }}
+            />
         </Tab.Navigator>
     );
 }
@@ -80,19 +149,30 @@ export default function MainNavigator() {
 const styles = StyleSheet.create({
     badge: {
         position: 'absolute',
-        right: -8,
+        right: -4,
         top: -4,
-        backgroundColor: '#ff3b30',
+        backgroundColor: '#f02849',
         borderRadius: 10,
-        minWidth: 20,
-        height: 20,
+        minWidth: 18,
+        height: 18,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 4,
+        borderWidth: 2,
+        borderColor: '#fff',
     },
     badgeText: {
         color: '#fff',
+        fontSize: 10,
+        fontWeight: '700',
+    },
+    label: {
         fontSize: 11,
-        fontWeight: 'bold',
+        color: '#65676b',
+        marginTop: 4,
+        fontWeight: '500',
+    },
+    labelActive: {
+        color: '#1877f2',
+        fontWeight: '600',
     },
 });

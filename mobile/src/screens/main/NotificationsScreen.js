@@ -14,135 +14,145 @@ import { fetchNotifications, markAsRead, markAllAsRead } from '../../store/slice
 import NotificationItem from '../../components/NotificationItem';
 
 /**
- * Notifications Screen
+ * Notifications Screen (Modernized)
  * 
  * Displays real-time notifications with:
  * - Different notification types (like, comment, follow, mention)
  * - User avatars and action descriptions
  * - Timestamps
  * - Mark as read functionality
- * - Pull to refresh
- * - Pagination
+ * - Pull to refresh with modern card design
  */
-const dispatch = useDispatch();
-const { items: notifications, unreadCount, isLoading, isLoadingMore, hasMore, nextCursor, error } = useSelector(
-    (state) => state.notifications
-);
 
-useEffect(() => {
-    // Fetch notifications on mount
-    dispatch(fetchNotifications({ cursor: null, limit: 20 }));
-}, [dispatch]);
+export default function NotificationsScreen() {
+    const dispatch = useDispatch();
+    const { items: notifications, unreadCount, isLoading, isLoadingMore, hasMore, nextCursor, error } = useSelector(
+        (state) => state.notifications
+    );
 
-const handleRefresh = useCallback(() => {
-    dispatch(fetchNotifications({ cursor: null, limit: 20 }));
-}, [dispatch]);
+    useEffect(() => {
+        // Fetch notifications on mount
+        dispatch(fetchNotifications({ cursor: null, limit: 20 }));
+    }, [dispatch]);
 
-const handleLoadMore = useCallback(() => {
-    if (!isLoadingMore && hasMore && nextCursor) {
-        dispatch(fetchNotifications({ cursor: nextCursor, limit: 20 }));
-    }
-}, [isLoadingMore, hasMore, nextCursor, dispatch]);
+    const handleRefresh = useCallback(() => {
+        dispatch(fetchNotifications({ cursor: null, limit: 20 }));
+    }, [dispatch]);
 
-const handleNotificationPress = (notification) => {
-    // Mark as read
-    if (!notification.isRead) {
-        dispatch(markAsRead(notification.id));
-    }
+    const handleLoadMore = useCallback(() => {
+        if (!isLoadingMore && hasMore && nextCursor) {
+            dispatch(fetchNotifications({ cursor: nextCursor, limit: 20 }));
+        }
+    }, [isLoadingMore, hasMore, nextCursor, dispatch]);
 
-    // TODO: Navigate to notification details or post
-    console.log('Notification pressed:', notification);
-};
+    const handleNotificationPress = (notification) => {
+        // Mark as read
+        if (!notification.isRead) {
+            dispatch(markAsRead(notification.id));
+        }
 
-const handleActionPress = (notificationId) => {
-    console.log('Action pressed for notification:', notificationId);
-    // TODO: Handle action button press (e.g., follow back)
-};
+        // TODO: Navigate to notification details or post
+        console.log('Notification pressed:', notification);
+    };
 
-const handleMarkAllAsRead = () => {
-    dispatch(markAllAsRead());
-};
+    const handleActionPress = (notificationId) => {
+        console.log('Action pressed for notification:', notificationId);
+    };
 
-const renderNotification = ({ item }) => (
-    <NotificationItem
-        notification={item}
-        onPress={() => handleNotificationPress(item)}
-        onActionPress={handleActionPress}
-    />
-);
+    const handleMarkAllAsRead = () => {
+        dispatch(markAllAsRead());
+    };
 
-const renderEmpty = () => {
-    if (isLoading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#1877f2" />
-            </View>
-        );
-    }
+    const renderNotification = ({ item }) => (
+        <NotificationItem
+            notification={item}
+            onPress={() => handleNotificationPress(item)}
+            onActionPress={handleActionPress}
+        />
+    );
 
-    if (error) {
+    const renderEmpty = () => {
+        if (isLoading) {
+            return (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#1877f2" />
+                </View>
+            );
+        }
+
+        if (error) {
+            return (
+                <View style={styles.emptyContainer}>
+                    <Ionicons name="alert-circle-outline" size={64} color="#f02849" />
+                    <Text style={styles.emptyText}>Failed to load notifications</Text>
+                    <Text style={styles.emptySubtext}>{error}</Text>
+                </View>
+            );
+        }
+
         return (
             <View style={styles.emptyContainer}>
-                <Ionicons name="alert-circle-outline" size={64} color="#f02849" />
-                <Text style={styles.emptyText}>Failed to load notifications</Text>
-                <Text style={styles.emptySubtext}>{error}</Text>
+                <Ionicons name="notifications-outline" size={64} color="#ccc" />
+                <Text style={styles.emptyText}>No notifications yet</Text>
+                <Text style={styles.emptySubtext}>
+                    You'll see notifications from your friends here
+                </Text>
             </View>
         );
-    }
+    };
+
+    const renderFooter = () => {
+        if (!isLoadingMore) return null;
+        return (
+            <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color="#1877f2" />
+            </View>
+        );
+    };
 
     return (
-        <View style={styles.emptyContainer}>
-            <Ionicons name="notifications-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No notifications yet</Text>
-            <Text style={styles.emptySubtext}>
-                You'll see notifications from your friends here
-            </Text>
+        <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Notifications</Text>
+                {unreadCount > 0 && (
+                    <TouchableOpacity
+                        style={styles.markAllButton}
+                        onPress={handleMarkAllAsRead}
+                    >
+                        <Text style={styles.markAllText}>Mark all as read</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            {/* Notifications List */}
+            <FlatList
+                data={notifications}
+                renderItem={renderNotification}
+                keyExtractor={(item) => item.id}
+                ListEmptyComponent={renderEmpty}
+                ListFooterComponent={renderFooter}
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.5}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isLoading && !isLoadingMore}
+                        onRefresh={handleRefresh}
+                        colors={['#1877f2']}
+                        tintColor="#1877f2"
+                    />
+                }
+                scrollEventThrottle={16}
+                contentContainerStyle={styles.listContent}
+            />
         </View>
     );
-};
-
-const renderFooter = () => {
-    if (!isLoadingMore) return null;
-    return (
-        <View style={styles.footerLoader}>
-            <ActivityIndicator size="small" color="#1877f2" />
-        </View>
-    );
-};
-
-return (
-    <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-            <Text style={styles.headerTitle}>Notifications</Text>
-        </View>
-
-        {/* Notifications List */}
-        <FlatList
-            data={notifications}
-            renderItem={renderNotification}
-            keyExtractor={(item) => item.id}
-            ListEmptyComponent={renderEmpty}
-            ListFooterComponent={renderFooter}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            refreshControl={
-                <RefreshControl
-                    refreshing={isLoading && !isLoadingMore}
-                    onRefresh={handleRefresh}
-                    tintColor="#1877f2"
-                />
-            }
-            scrollEventThrottle={16}
-        />
-    </View>
-);
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#f0f2f5',
     },
     header: {
         flexDirection: 'row',
@@ -150,6 +160,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 16,
+        backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#e4e6eb',
     },
@@ -163,9 +174,12 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
     },
     markAllText: {
-        fontSize: 14,
+        fontSize: 13,
         color: '#1877f2',
         fontWeight: '600',
+    },
+    listContent: {
+        paddingVertical: 8,
     },
     loadingContainer: {
         flex: 1,
