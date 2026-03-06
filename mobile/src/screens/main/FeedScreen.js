@@ -1,23 +1,24 @@
 import React, { useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import { fetchFeed, clearFeed } from '../../store/slices/postsSlice';
-import PostCard from '../../components/PostCard';
+import FeedPost from '../../components/FeedPost';
+import MobileHeader from '../../components/MobileHeader';
+import CreatePostCard from '../../components/CreatePostCard';
+import StoryCarousel from '../../components/StoryCarousel';
 import SkeletonLoader from '../../components/SkeletonLoader';
 
 /**
- * Feed Screen
+ * Feed Screen (Modernized)
  * 
- * Main feed implementation with:
- * - FlashList for performance (better than FlatList)
- * - Cursor-based pagination
- * - Pull-to-refresh
- * - Skeleton loading states
- * - Empty state
- * - Error handling
- * - Floating action button to create posts
+ * Main feed with modern design:
+ * - MobileHeader at top with search, messages, notifications
+ * - CreatePostCard for writing posts
+ * - StoryCarousel for viewing stories
+ * - FlashList with FeedPost components
+ * - Cursor-based pagination and pull-to-refresh
  */
 
 export default function FeedScreen() {
@@ -34,6 +35,8 @@ export default function FeedScreen() {
         nextCursor,
         error,
     } = useSelector((state) => state.posts);
+
+    const userProfile = useSelector((state) => state.auth.user);
 
     // Convert normalized state to array for FlashList
     const posts = allIds.map((id) => byId[id]);
@@ -60,8 +63,28 @@ export default function FeedScreen() {
 
     // Render individual post
     const renderPost = useCallback(({ item }) => {
-        return <PostCard post={item} />;
+        return <FeedPost post={item} />;
     }, []);
+
+    // List header with create post card and stories
+    const renderHeader = () => (
+        <>
+            <CreatePostCard
+                userAvatar={userProfile?.avatar || userProfile?.avatarUrl}
+                userName={userProfile?.name || userProfile?.username}
+                onPress={() => navigation.navigate('CreatePost')}
+                onLivePress={() => {}}
+                onPhotoPress={() => navigation.navigate('CreatePost')}
+                onFeelingPress={() => navigation.navigate('CreatePost')}
+            />
+            <StoryCarousel
+                stories={[]}
+                userProfile={userProfile}
+                onCreateStoryPress={() => {}}
+                onStoryPress={() => {}}
+            />
+        </>
+    );
 
     // Footer: loading indicator when fetching more
     const renderFooter = () => {
@@ -88,7 +111,7 @@ export default function FeedScreen() {
         if (error) {
             return (
                 <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyTitle}>😕 Something went wrong</Text>
+                    <Text style={styles.emptyTitle}>Something went wrong</Text>
                     <Text style={styles.emptyText}>{error}</Text>
                 </View>
             );
@@ -96,7 +119,7 @@ export default function FeedScreen() {
 
         return (
             <View style={styles.emptyContainer}>
-                <Text style={styles.emptyTitle}>👋 Welcome to your feed!</Text>
+                <Text style={styles.emptyTitle}>Welcome to your feed!</Text>
                 <Text style={styles.emptyText}>
                     Follow people to see their posts here
                 </Text>
@@ -106,6 +129,12 @@ export default function FeedScreen() {
 
     return (
         <View style={styles.container}>
+            <MobileHeader
+                onSearchPress={() => navigation.navigate('Search')}
+                onMessengerPress={() => navigation.navigate('Conversations')}
+                onNotificationsPress={() => navigation.navigate('Notifications')}
+                notificationBadge={0}
+            />
             <FlashList
                 data={posts}
                 renderItem={renderPost}
@@ -113,6 +142,7 @@ export default function FeedScreen() {
                 estimatedItemSize={400}
                 onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.5}
+                ListHeaderComponent={renderHeader}
                 ListFooterComponent={renderFooter}
                 ListEmptyComponent={renderEmpty}
                 refreshControl={
@@ -124,15 +154,6 @@ export default function FeedScreen() {
                     />
                 }
             />
-
-            {/* Floating Action Button */}
-            <TouchableOpacity
-                style={styles.fab}
-                onPress={() => navigation.navigate('CreatePost')}
-                activeOpacity={0.8}
-            >
-                <Text style={styles.fabIcon}>✏️</Text>
-            </TouchableOpacity>
         </View>
     );
 }
@@ -165,24 +186,5 @@ const styles = StyleSheet.create({
         color: '#65676b',
         textAlign: 'center',
         lineHeight: 20,
-    },
-    fab: {
-        position: 'absolute',
-        right: 20,
-        bottom: 20,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: '#1877f2',
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-    },
-    fabIcon: {
-        fontSize: 24,
     },
 });
