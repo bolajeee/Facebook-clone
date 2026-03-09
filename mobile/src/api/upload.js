@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { Platform } from 'react-native';
 
 /**
  * Upload API Service
@@ -15,23 +16,31 @@ export const uploadAPI = {
     uploadImage: async (imageUri) => {
         const formData = new FormData();
 
-        // Extract filename from URI
-        const filename = imageUri.split('/').pop();
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : 'image/jpeg';
+        if (Platform.OS === 'web') {
+            const fetchResponse = await fetch(imageUri);
+            const blob = await fetchResponse.blob();
+            const filename = imageUri.split('/').pop() || 'image.jpg';
+            const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
+            formData.append('image', file);
+        } else {
+            const filename = imageUri.split('/').pop();
+            const match = /\.(\w+)$/.exec(filename);
+            const type = match ? `image/${match[1]}` : 'image/jpeg';
 
-        // Append image with proper structure
-        formData.append('image', {
-            uri: imageUri,
-            name: filename,
-            type,
-        });
+            formData.append('image', {
+                uri: imageUri,
+                name: filename,
+                type,
+            });
+        }
 
-        return apiClient.post('/upload/image', formData, {
+        const response = await apiClient.post('/upload/image', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
         });
+
+        return response.data?.data;
     },
 
     /**
@@ -41,6 +50,6 @@ export const uploadAPI = {
     deleteImage: (publicId) => {
         return apiClient.delete('/upload/image', {
             data: { publicId }
-        });
+        }).then((response) => response.data?.data || response.data);
     },
 };

@@ -49,7 +49,7 @@ export const likePost = createAsyncThunk(
         try {
             const userId = getState().auth.user.id;
             const response = await postsAPI.likePost(postId);
-            return { postId, userId, like: response.data };
+            return { postId, userId, like: response.data?.data || response.data };
         } catch (error) {
             return rejectWithValue(
                 error.response?.data?.message || 'Failed to like post'
@@ -64,8 +64,8 @@ export const unlikePost = createAsyncThunk(
     async (postId, { rejectWithValue, getState }) => {
         try {
             const userId = getState().auth.user.id;
-            await postsAPI.unlikePost(postId);
-            return { postId, userId };
+            const response = await postsAPI.unlikePost(postId);
+            return { postId, userId, like: response.data?.data || response.data };
         } catch (error) {
             return rejectWithValue(
                 error.response?.data?.message || 'Failed to unlike post'
@@ -202,7 +202,10 @@ const postsSlice = createSlice({
             .addCase(createPost.fulfilled, (state, action) => {
                 const responseData = action.payload?.data;
                 if (responseData && responseData.post) {
-                    const post = responseData.post;
+                    const post = {
+                        ...responseData.post,
+                        isLikedByUser: responseData.post.isLikedByUser ?? responseData.post.isLiked ?? false,
+                    };
                     state.byId[post.id] = post;
                     state.allIds.unshift(post.id);
                 }
@@ -218,9 +221,9 @@ const postsSlice = createSlice({
             .addCase(likePost.fulfilled, (state, action) => {
                 const { postId, like } = action.payload;
                 const post = state.byId[postId];
-                if (post && like?.data) {
-                    post.isLikedByUser = like.data.isLiked;
-                    post.likesCount = like.data.likesCount;
+                if (post && like) {
+                    post.isLikedByUser = like.isLiked;
+                    post.likesCount = like.likesCount;
                 }
             })
             .addCase(likePost.rejected, (state, action) => {
@@ -236,10 +239,11 @@ const postsSlice = createSlice({
         // Unlike Post
         builder
             .addCase(unlikePost.fulfilled, (state, action) => {
-                const { postId } = action.payload;
+                const { postId, like } = action.payload;
                 const post = state.byId[postId];
-                if (post) {
-                    post.isLikedByUser = false;
+                if (post && like) {
+                    post.isLikedByUser = like.isLiked;
+                    post.likesCount = like.likesCount;
                 }
             })
             .addCase(unlikePost.rejected, (state, action) => {

@@ -1,5 +1,23 @@
 import apiClient from './client';
 
+const normalizePost = (post) => {
+    if (!post) return post;
+    return {
+        ...post,
+        isLikedByUser: post.isLikedByUser ?? post.isLiked ?? false,
+    };
+};
+
+const normalizePostsResponse = (responseData) => {
+    const payload = responseData?.data || responseData || {};
+    const posts = Array.isArray(payload.posts) ? payload.posts.map(normalizePost) : [];
+
+    return {
+        ...payload,
+        posts,
+    };
+};
+
 /**
  * Posts API Service
  * 
@@ -19,7 +37,13 @@ export const postsAPI = {
     getFeed: (cursor = null, limit = 10) => {
         const params = { limit };
         if (cursor) params.cursor = cursor;
-        return apiClient.get('/posts/feed', { params });
+        return apiClient.get('/posts/feed', { params }).then((response) => ({
+            ...response,
+            data: {
+                ...response.data,
+                data: normalizePostsResponse(response.data),
+            },
+        }));
     },
 
     /**
@@ -43,7 +67,7 @@ export const postsAPI = {
      * @param {string} postId
      */
     unlikePost: (postId) => {
-        return apiClient.delete(`/posts/${postId}/like`);
+        return apiClient.post(`/posts/${postId}/like`);
     },
 
     /**
@@ -71,7 +95,19 @@ export const postsAPI = {
      * @param {string} postId
      */
     getPost: (postId) => {
-        return apiClient.get(`/posts/${postId}`);
+        return apiClient.get(`/posts/${postId}`).then((response) => {
+            const payload = response.data?.data || {};
+            return {
+                ...response,
+                data: {
+                    ...response.data,
+                    data: {
+                        ...payload,
+                        post: normalizePost(payload.post),
+                    },
+                },
+            };
+        });
     },
 
     /**
@@ -83,7 +119,13 @@ export const postsAPI = {
     getUserPosts: (userId, cursor = null, limit = 10) => {
         const params = { limit };
         if (cursor) params.cursor = cursor;
-        return apiClient.get(`/posts/user/${userId}`, { params });
+        return apiClient.get(`/posts/user/${userId}`, { params }).then((response) => ({
+            ...response,
+            data: {
+                ...response.data,
+                data: normalizePostsResponse(response.data),
+            },
+        }));
     },
 
     /**

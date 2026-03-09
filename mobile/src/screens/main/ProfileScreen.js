@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
-import { logout } from '../../store/slices/authSlice';
+import { logout, updateUser } from '../../store/slices/authSlice';
 import {
     fetchUserProfile,
     followUser,
@@ -25,6 +25,8 @@ import {
     optimisticUnfollow,
     fetchUserPosts,
 } from '../../store/slices/usersSlice';
+import { uploadAPI } from '../../api/upload';
+import { usersAPI } from '../../api/users';
 
 const { width } = Dimensions.get('window');
 const GRID_COLUMNS = 3;
@@ -46,7 +48,7 @@ const GRID_ITEM_SIZE = (width - (GRID_COLUMNS + 1) * GRID_SPACING) / GRID_COLUMN
 export default function ProfileScreen({ route }) {
     const dispatch = useDispatch();
     const navigation = useNavigation();
-    const { user: currentUser, accessToken } = useSelector((state) => state.auth);
+    const { user: currentUser } = useSelector((state) => state.auth);
     const { profiles, isLoadingProfile, userPosts, isLoadingPosts } = useSelector((state) => state.users);
     const { byId: postsById } = useSelector((state) => state.posts);
 
@@ -143,52 +145,17 @@ export default function ProfileScreen({ route }) {
                 setIsUploadingAvatar(true);
 
                 try {
-                    // Create FormData - React Native Web compatible
-                    const formData = new FormData();
                     const uri = result.assets[0].uri;
-
-                    // For web, we need to fetch the blob first
-                    const response = await fetch(uri);
-                    const blob = await response.blob();
-
-                    // Create a File object from the blob
-                    const filename = uri.split('/').pop() || 'avatar.jpg';
-                    const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
-
-                    formData.append('image', file);
-
-                    // Upload to backend
-                    console.log('Uploading avatar with token:', accessToken ? 'Token exists' : 'No token');
-                    const uploadResponse = await fetch('http://localhost:5000/api/upload/image', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                        },
-                        body: formData,
-                    });
-
-                    const uploadData = await uploadResponse.json();
-
-                    if (!uploadResponse.ok) {
-                        throw new Error(uploadData.message || 'Upload failed');
+                    const uploadData = await uploadAPI.uploadImage(uri);
+                    const imageUrl = uploadData?.imageUrl;
+                    if (!imageUrl) {
+                        throw new Error('Upload failed');
                     }
 
-                    const imageUrl = uploadData.data.imageUrl;
-
-                    // Update profile with new avatar
-                    const profileResponse = await fetch('http://localhost:5000/api/users/profile', {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${accessToken}`,
-                        },
-                        body: JSON.stringify({ avatar: imageUrl }),
-                    });
-
-                    const profileData = await profileResponse.json();
-
-                    if (!profileResponse.ok) {
-                        throw new Error(profileData.message || 'Profile update failed');
+                    const profileResponse = await usersAPI.updateProfile({ avatar: imageUrl });
+                    const updatedUser = profileResponse.data?.data?.user;
+                    if (updatedUser) {
+                        dispatch(updateUser(updatedUser));
                     }
 
                     // Refresh profile
@@ -241,52 +208,17 @@ export default function ProfileScreen({ route }) {
                 setIsUploadingCover(true);
 
                 try {
-                    // Create FormData - React Native Web compatible
-                    const formData = new FormData();
                     const uri = result.assets[0].uri;
-
-                    // For web, we need to fetch the blob first
-                    const response = await fetch(uri);
-                    const blob = await response.blob();
-
-                    // Create a File object from the blob
-                    const filename = uri.split('/').pop() || 'cover.jpg';
-                    const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
-
-                    formData.append('image', file);
-
-                    // Upload to backend
-                    console.log('Uploading cover with token:', accessToken ? 'Token exists' : 'No token');
-                    const uploadResponse = await fetch('http://localhost:5000/api/upload/image', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                        },
-                        body: formData,
-                    });
-
-                    const uploadData = await uploadResponse.json();
-
-                    if (!uploadResponse.ok) {
-                        throw new Error(uploadData.message || 'Upload failed');
+                    const uploadData = await uploadAPI.uploadImage(uri);
+                    const imageUrl = uploadData?.imageUrl;
+                    if (!imageUrl) {
+                        throw new Error('Upload failed');
                     }
 
-                    const imageUrl = uploadData.data.imageUrl;
-
-                    // Update profile with new cover photo
-                    const profileResponse = await fetch('http://localhost:5000/api/users/profile', {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${accessToken}`,
-                        },
-                        body: JSON.stringify({ coverPhoto: imageUrl }),
-                    });
-
-                    const profileData = await profileResponse.json();
-
-                    if (!profileResponse.ok) {
-                        throw new Error(profileData.message || 'Profile update failed');
+                    const profileResponse = await usersAPI.updateProfile({ coverPhoto: imageUrl });
+                    const updatedUser = profileResponse.data?.data?.user;
+                    if (updatedUser) {
+                        dispatch(updateUser(updatedUser));
                     }
 
                     // Refresh profile

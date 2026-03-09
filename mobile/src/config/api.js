@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 /**
  * API Configuration
@@ -12,11 +13,27 @@ import Constants from 'expo-constants';
  * - Physical device: use your computer's local IP address
  */
 
+const getLocalHost = () => {
+    if (Platform.OS === 'android') {
+        return '10.0.2.2';
+    }
+
+    const hostUri = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost;
+    if (hostUri) {
+        return hostUri.split(':')[0];
+    }
+
+    return 'localhost';
+};
+
 const ENV = {
-    dev: {
-        apiUrl: 'http://localhost:5000/api',
-        socketUrl: 'http://localhost:5000',
-    },
+    dev: (() => {
+        const host = getLocalHost();
+        return {
+            apiUrl: `http://${host}:5000/api`,
+            socketUrl: `http://${host}:5000`,
+        };
+    })(),
     staging: {
         apiUrl: 'https://your-staging-api.com/api',
         socketUrl: 'https://your-staging-api.com',
@@ -27,9 +44,6 @@ const ENV = {
     },
 };
 
-const getEnvVars = () => {
-    // You can switch this based on your needs
-    return ENV.dev;
-};
+const getEnvVars = () => ENV.dev;
 
 export default getEnvVars();

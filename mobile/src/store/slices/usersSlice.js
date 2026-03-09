@@ -33,7 +33,7 @@ export const updateProfile = createAsyncThunk(
     async (profileData, { rejectWithValue }) => {
         try {
             const response = await usersAPI.updateProfile(profileData);
-            return response.data.user;
+            return response.data?.data?.user || response.data?.user;
         } catch (error) {
             return rejectWithValue(
                 error.response?.data?.message || 'Failed to update profile'
@@ -161,7 +161,9 @@ const usersSlice = createSlice({
             })
             .addCase(updateProfile.fulfilled, (state, action) => {
                 const user = action.payload;
-                state.profiles[user.id] = { ...state.profiles[user.id], ...user };
+                if (user?.id) {
+                    state.profiles[user.id] = { ...state.profiles[user.id], ...user };
+                }
                 state.isUpdatingProfile = false;
             })
             .addCase(updateProfile.rejected, (state, action) => {

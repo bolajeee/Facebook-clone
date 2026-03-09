@@ -93,8 +93,8 @@ export default function EditProfileScreen({ navigation }) {
                 quality: 0.8,
             });
 
-            if (!result.cancelled) {
-                setAvatarUri(result.uri);
+            if (!result.canceled) {
+                setAvatarUri(result.assets?.[0]?.uri || null);
             }
         } catch (error) {
             console.error('Image picker error:', error);
@@ -126,7 +126,7 @@ export default function EditProfileScreen({ navigation }) {
                 try {
                     console.log('[v0] Uploading avatar...');
                     const uploadResponse = await uploadAPI.uploadImage(avatarUri);
-                    updateData.avatar = uploadResponse.data.imageUrl;
+                    updateData.avatar = uploadResponse?.imageUrl;
                     console.log('[v0] Avatar uploaded successfully');
                 } catch (uploadError) {
                     console.error('[v0] Avatar upload error:', uploadError);
@@ -139,7 +139,7 @@ export default function EditProfileScreen({ navigation }) {
             const response = await usersAPI.updateProfile(updateData);
             
             // Update Redux store
-            dispatch(updateUser(response.data.user));
+            dispatch(updateUser(response.data?.data?.user || response.data?.user));
 
             // Reset avatar URI since upload was successful
             setAvatarUri(null);

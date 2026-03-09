@@ -52,7 +52,22 @@ export const usersAPI = {
     getFollowers: (userId, cursor = null, limit = 20) => {
         const params = { limit };
         if (cursor) params.cursor = cursor;
-        return apiClient.get(`/users/${userId}/followers`, { params });
+        return apiClient.get(`/users/${userId}/followers`, { params }).then((response) => {
+            const payload = response.data?.data || {};
+            return {
+                ...response,
+                data: {
+                    ...response.data,
+                    data: {
+                        ...payload,
+                        pagination: {
+                            nextCursor: payload.nextCursor || null,
+                            hasMore: payload.hasMore || false,
+                        },
+                    },
+                },
+            };
+        });
     },
 
     /**
@@ -64,7 +79,22 @@ export const usersAPI = {
     getFollowing: (userId, cursor = null, limit = 20) => {
         const params = { limit };
         if (cursor) params.cursor = cursor;
-        return apiClient.get(`/users/${userId}/following`, { params });
+        return apiClient.get(`/users/${userId}/following`, { params }).then((response) => {
+            const payload = response.data?.data || {};
+            return {
+                ...response,
+                data: {
+                    ...response.data,
+                    data: {
+                        ...payload,
+                        pagination: {
+                            nextCursor: payload.nextCursor || null,
+                            hasMore: payload.hasMore || false,
+                        },
+                    },
+                },
+            };
+        });
     },
 
     /**
@@ -76,7 +106,28 @@ export const usersAPI = {
     getUserPosts: (userId, cursor = null, limit = 10) => {
         const params = { limit };
         if (cursor) params.cursor = cursor;
-        return apiClient.get(`/users/${userId}/posts`, { params });
+        return apiClient.get(`/users/${userId}/posts`, { params }).then((response) => {
+            const payload = response.data?.data || {};
+            return {
+                ...response,
+                data: {
+                    ...response.data,
+                    data: {
+                        ...payload,
+                        posts: Array.isArray(payload.posts)
+                            ? payload.posts.map((post) => ({
+                                ...post,
+                                isLikedByUser: post.isLikedByUser ?? post.isLiked ?? false,
+                            }))
+                            : [],
+                        pagination: {
+                            nextCursor: payload.nextCursor || null,
+                            hasMore: payload.hasMore || false,
+                        },
+                    },
+                },
+            };
+        });
     },
 
     /**

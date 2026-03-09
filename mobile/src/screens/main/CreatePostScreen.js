@@ -14,7 +14,8 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useDispatch, useSelector } from 'react-redux';
-import { createPost, prependPost } from '../../store/slices/postsSlice';
+import { createPost } from '../../store/slices/postsSlice';
+import { uploadAPI } from '../../api/upload';
 
 /**
  * Create Post Screen
@@ -31,7 +32,7 @@ import { createPost, prependPost } from '../../store/slices/postsSlice';
 
 export default function CreatePostScreen({ navigation }) {
     const dispatch = useDispatch();
-    const { user, accessToken } = useSelector((state) => state.auth);
+    const { user } = useSelector((state) => state.auth);
     const fileInputRef = useRef(null);
 
     const [content, setContent] = useState('');
@@ -186,35 +187,8 @@ export default function CreatePostScreen({ navigation }) {
             // Upload image if selected
             if (selectedImage) {
                 console.log('Uploading image...');
-
-                // For web, we need to fetch the blob first
-                const response = await fetch(selectedImage);
-                const blob = await response.blob();
-
-                // Create a File object from the blob
-                const filename = selectedImage.split('/').pop() || 'post-image.jpg';
-                const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
-
-                const formData = new FormData();
-                formData.append('image', file);
-
-                // Upload to backend
-                console.log('Uploading with token:', accessToken ? 'Token exists' : 'No token');
-                const uploadResponse = await fetch('http://localhost:5000/api/upload/image', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                    },
-                    body: formData,
-                });
-
-                const uploadData = await uploadResponse.json();
-
-                if (!uploadResponse.ok) {
-                    throw new Error(uploadData.message || 'Image upload failed');
-                }
-
-                imageUrl = uploadData.data.imageUrl;
+                const uploadData = await uploadAPI.uploadImage(selectedImage);
+                imageUrl = uploadData?.imageUrl || null;
                 console.log('Image uploaded:', imageUrl);
             }
 

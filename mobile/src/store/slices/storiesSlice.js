@@ -1,7 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import apiClient from '../../api/client';
 
 /**
  * Async thunks
@@ -10,7 +8,7 @@ export const fetchStories = createAsyncThunk(
     'stories/fetchStories',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/stories`);
+            const response = await apiClient.get('/stories');
             return response.data.data;
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch stories');
@@ -22,7 +20,7 @@ export const createStory = createAsyncThunk(
     'stories/createStory',
     async (formData, { rejectWithValue }) => {
         try {
-            const response = await axios.post(`${API_BASE_URL}/stories`, formData, {
+            const response = await apiClient.post('/stories', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             return response.data.data;

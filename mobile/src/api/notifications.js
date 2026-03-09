@@ -31,14 +31,14 @@ export const notificationsAPI = {
      * @param {string} notificationId
      */
     markAsRead: (notificationId) => {
-        return apiClient.patch(`/notifications/${notificationId}/read`);
+        return apiClient.put(`/notifications/${notificationId}/read`);
     },
 
     /**
      * Mark all notifications as read
      */
     markAllAsRead: () => {
-        return apiClient.patch('/notifications/read-all');
+        return apiClient.put('/notifications/read-all');
     },
 
     /**
@@ -54,5 +54,20 @@ export const notificationsAPI = {
      */
     deleteAllRead: () => {
         return apiClient.delete('/notifications/read');
+    },
+
+    /**
+     * Get notification settings
+     */
+    getSettings: () => {
+        return apiClient.get('/notifications/settings');
+    },
+
+    /**
+     * Update notification settings
+     * @param {Object} settings
+     */
+    updateSettings: (settings) => {
+        return apiClient.put('/notifications/settings', settings);
     },
 };

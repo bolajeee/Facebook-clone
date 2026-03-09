@@ -1,7 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import apiClient from '../../api/client';
 
 /**
  * Async thunks
@@ -10,7 +8,7 @@ export const fetchConversations = createAsyncThunk(
     'messages/fetchConversations',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/messages/conversations`);
+            const response = await apiClient.get('/messages/conversations');
             return response.data.data;
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch conversations');
@@ -22,7 +20,7 @@ export const fetchChatMessages = createAsyncThunk(
     'messages/fetchChatMessages',
     async (userId, { rejectWithValue }) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/messages/${userId}`);
+            const response = await apiClient.get(`/messages/${userId}`);
             return { userId, messages: response.data.data };
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch messages');
@@ -34,7 +32,7 @@ export const sendMessage = createAsyncThunk(
     'messages/sendMessage',
     async ({ recipientId, content }, { rejectWithValue }) => {
         try {
-            const response = await axios.post(`${API_BASE_URL}/messages/send`, {
+            const response = await apiClient.post('/messages/send', {
                 recipientId,
                 content,
             });

@@ -34,14 +34,14 @@ export default function NotificationItem({
     };
 
     const getNotificationIcon = () => {
-        switch (notification.type) {
-            case 'like':
+        switch ((notification.type || '').toUpperCase()) {
+            case 'LIKE':
                 return { icon: 'heart', color: '#f02849' };
-            case 'comment':
+            case 'COMMENT':
                 return { icon: 'chatbubble', color: '#1877f2' };
-            case 'follow':
+            case 'FOLLOW':
                 return { icon: 'person-add', color: '#1877f2' };
-            case 'mention':
+            case 'MENTION':
                 return { icon: 'at', color: '#1877f2' };
             default:
                 return { icon: 'notifications', color: '#1877f2' };

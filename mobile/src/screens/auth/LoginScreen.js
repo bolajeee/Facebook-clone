@@ -17,7 +17,7 @@ import { testConnection, testHealth } from '../../utils/testConnection';
 /**
  * Login Screen
  * 
- * Allows users to login with email and password.
+ * Allows users to login with email/username and password.
  * Features:
  * - Form validation
  * - Loading state
@@ -29,7 +29,7 @@ export default function LoginScreen({ navigation }) {
     const dispatch = useDispatch();
     const { isLoading, error } = useSelector((state) => state.auth);
 
-    const [email, setEmail] = useState('');
+    const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
 
     const handleTestConnection = async () => {
@@ -55,18 +55,13 @@ export default function LoginScreen({ navigation }) {
 
     const handleLogin = async () => {
         // Basic validation
-        if (!email || !password) {
+        if (!identifier || !password) {
             Alert.alert('Error', 'Please fill in all fields');
             return;
         }
 
-        if (!email.includes('@')) {
-            Alert.alert('Error', 'Please enter a valid email');
-            return;
-        }
-
         // Dispatch login action
-        const result = await dispatch(login({ email, password }));
+        const result = await dispatch(login({ email: identifier, password }));
 
         if (login.rejected.match(result)) {
             Alert.alert('Login Failed', result.payload);
@@ -83,14 +78,13 @@ export default function LoginScreen({ navigation }) {
                 <Text style={styles.logo}>facebook</Text>
                 <Text style={styles.subtitle}>Connect with friends and the world</Text>
 
-                {/* Email Input */}
+                {/* Email/Username Input */}
                 <TextInput
                     style={styles.input}
-                    placeholder="Email"
-                    value={email}
-                    onChangeText={setEmail}
+                    placeholder="Email or Username"
+                    value={identifier}
+                    onChangeText={setIdentifier}
                     autoCapitalize="none"
-                    keyboardType="email-address"
                     editable={!isLoading}
                 />
 

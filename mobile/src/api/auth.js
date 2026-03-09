@@ -38,4 +38,19 @@ export const authAPI = {
     logout: () => {
         return apiClient.post('/auth/logout');
     },
+
+    /**
+     * Get current authenticated user profile
+     */
+    getMe: () => {
+        return apiClient.get('/auth/me');
+    },
+
+    /**
+     * Change current user password
+     * @param {Object} payload - { currentPassword, newPassword }
+     */
+    changePassword: (payload) => {
+        return apiClient.put('/auth/change-password', payload);
+    },
 };
